@@ -1,15 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using RestSharp;
-using Newtonsoft.Json;
 using System.Net;
-using System.IO;
-using System.Net.Http;
-using System.Runtime;
-using System.Runtime.CompilerServices;
 
 namespace Haley.Models
 {

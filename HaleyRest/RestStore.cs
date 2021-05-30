@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using RestSharp;
-using Newtonsoft.Json;
 using System.Net;
 using System.IO;
 using System.Net.Http;
@@ -12,7 +11,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using Haley.Models;
 using Haley.Enums;
-
+using System.Text.Json;
 
 namespace Haley.Utils
 {
@@ -36,7 +35,9 @@ namespace Haley.Utils
                 //Check if the directory is working
                 var _result = await invoke(null, download_url, is_anonymous: true); //Whenever we send a request, it checks whether it
                 if (_result.status_code != HttpStatusCode.OK) return result;
-                dynamic _dir_files = JsonConvert.DeserializeObject(_result.content); //Gets all the files inside the directory
+
+                dynamic _dir_files = JsonSerializer.Deserialize<dynamic>(_result.content);
+                //dynamic _dir_files = JsonConvert.DeserializeObject(_result.content); //Gets all the files inside the directory
 
                 foreach (var _file in _dir_files) //We get the list of all files in the folder. We can either choose to download single file or all the files.
                 {
@@ -85,9 +86,10 @@ namespace Haley.Utils
                 if (github_response.status_code != HttpStatusCode.OK) return (null,null);
 
                     //Get content
-                    dynamic _content = JsonConvert.DeserializeObject(github_response.content);
-                    //Since we know that it is from github, we also know that it is supposed to have download url
-                    if (_content.download_url != null)
+                    //dynamic _content = JsonConvert.DeserializeObject(github_response.content);
+                dynamic _content = JsonSerializer.Deserialize<dynamic>(github_response.content);
+                //Since we know that it is from github, we also know that it is supposed to have download url
+                if (_content.download_url != null)
                     {
                         _path = downloadFromWeb((string)_content.download_url, (string)_content.name);
                         _sha = _content.sha;
@@ -243,7 +245,8 @@ namespace Haley.Utils
                 if (serialize_content) 
                 {
                     _supply_param_type = ParameterType.RequestBody;
-                    _value_string = JsonConvert.SerializeObject(content);
+                    _value_string = JsonSerializer.Serialize(content);
+                    //_value_string = JsonConvert.SerializeObject(content);
                     _request.AddParameter("data", _value_string, _supply_param_type);
                     return true;
                 }
