@@ -5,9 +5,9 @@ namespace Haley.Models
 {
     public class RestResponse
     {
-        public string error_message { get; set; }
-        public string server_url { get; set; }
-        public Uri response_uri { get; set; }
+        public string ErrorMessage { get; set; }
+        public string ServerURL { get; set; }
+        public Uri ResponseURI { get; set; }
         public Exception exception { get; set; }
         public byte[] contents_raw { get; set; }
         public bool is_success { get; set; }

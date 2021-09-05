@@ -16,7 +16,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Product>Haley Helpers</Product>
     <PackageId>Haley.Rest</PackageId>
-    <Version>1.0.0.0-development</Version>
+    <Version>1.0.0.1-development</Version>
     <PackageProjectUrl>https://github.com/rmsmech/HaleyRest</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rmsmech/HaleyRest</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

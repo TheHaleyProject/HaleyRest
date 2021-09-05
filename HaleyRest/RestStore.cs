@@ -204,15 +204,15 @@ namespace Haley.Utils
                 //var _response = await client.ExecuteAsync(_request);
                 var _response = client.Execute(_request);
                 _result.content = _response.Content;
-                _result.server_url = _response.Server;
+                _result.ServerURL = _response.Server;
                 _result.is_success = _response.IsSuccessful;
                 _result.status_code = _response.StatusCode;
                 _result.contents_raw = _response.RawBytes;
                 _result.content_encoding = _response.ContentEncoding;
                 _result.content_length = _response.ContentLength;
-                _result.error_message = _response.ErrorMessage;
+                _result.ErrorMessage = _response.ErrorMessage;
                 _result.exception = _response.ErrorException;
-                _result.response_uri = _response.ResponseUri;
+                _result.ResponseURI = _response.ResponseUri;
                 return _result;
             }
             catch (Exception ex)
