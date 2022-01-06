@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace Haley.Enums
 {
-    public enum RestMethod
+    public enum Method
     {
-        Post,
-        Get,
-        Put,
-        Delete
+       Get,
+       Post,
+       Delete,
+       Update
     }
 }

@@ -6,10 +6,13 @@ using System.Threading.Tasks;
 
 namespace Haley.Enums
 {
-    public enum RestParamType
+    public enum ContentType
     {
-        QueryString,
-        RequestBody,
-        Header
+        String,
+        ByteArray,
+        Json,
+        MultiPart,
+        Stream,
+        FormURLEncoded
     }
 }

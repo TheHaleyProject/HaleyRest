@@ -3,7 +3,7 @@ using System.Net;
 
 namespace Haley.Models
 {
-    public class RestResponse
+    public class Response
     {
         public string ErrorMessage { get; set; }
         public string ServerURL { get; set; }
@@ -17,6 +17,6 @@ namespace Haley.Models
         public long content_length { get; set; }
         public string content_type { get; set; }
         public string status_description { get; set; }
-        public RestResponse() { }
+        public Response() { }
     }
 }
