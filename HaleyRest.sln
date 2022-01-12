@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.31019.35
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HaleyRest", "HaleyRest\HaleyRest.csproj", "{4B25C6F3-CEC9-4D15-8463-17C77F9AC86F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HaleyRest.Console", "HaleyRest.Console\HaleyRest.Console.csproj", "{0B1E30C6-30F4-4302-9674-3CD51FB819B8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HaleyRest.ConsoleTest", "HaleyRest.Console\HaleyRest.ConsoleTest.csproj", "{0B1E30C6-30F4-4302-9674-3CD51FB819B8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

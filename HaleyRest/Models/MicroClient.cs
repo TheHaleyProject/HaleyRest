@@ -147,6 +147,8 @@ namespace Haley.Models
             HttpMethod request_method = HttpMethod.Get;
             switch (method)
             {
+                case Method.Get:
+                    return await BaseClient.GetAsync(url);
                 case Method.Post:
                     request_method = HttpMethod.Post;
                     break;
@@ -158,6 +160,7 @@ namespace Haley.Models
                     break;
             }
             var request = new HttpRequestMessage(request_method, parseURI(url).resource_part) {Content = content }; //URL should not have base part.
+
             return await InvokeAsync(request);
         }
 
@@ -171,15 +174,21 @@ namespace Haley.Models
             try
             {
                 if (string.IsNullOrEmpty(input_url)) return (null, null);
-                var _uri = new Uri(input_url);
-                string _base = _uri.GetLeftPart(UriPartial.Authority);
-                string _method = input_url.Substring(_base.Length);
-                return (_base, _method);
+                if(Uri.TryCreate(input_url,UriKind.RelativeOrAbsolute,out Uri _uri))
+                {
+                    if (_uri.IsAbsoluteUri)
+                    {
+                        string _base = _uri.GetLeftPart(UriPartial.Authority);
+                        string _method = input_url.Substring(_base.Length);
+                        return (_base, _method);
+                    }
+                }
+                return (null, input_url);
             }
             catch (Exception ex)
             {
                 Debug.WriteLine("ERROR: " + ex.StackTrace);
-                return (null, null);
+                return (null, input_url);
             }
         }
         private (string base_part, string resource_part) parseURI(Uri input_uri)
