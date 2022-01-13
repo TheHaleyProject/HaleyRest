@@ -29,9 +29,6 @@ namespace Haley.Rest
         public static IClient GetClient(string key)
         {
              _clientDictionary.TryGetValue(key, out var result);
-             result
-                .ClearRequestHeaders()
-                .ClearRequestAuthentication(); //Always clear the header when you try to get it via the client store.
              return result;
         }
         public static IClient GetClient(Enum @enum)

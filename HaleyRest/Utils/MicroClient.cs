@@ -27,9 +27,10 @@ namespace Haley.Utils
     public sealed class MicroClient :IClient
     {
         public HttpClient BaseClient { get; }
-
+        public string Id { get; }
         #region Attributes
-        private object requestMonitor = new object();
+        //private object requestMonitor = new object(); //DONOT USE LOCK OR MONITOR. IT DOESN'T WORK AS EXPECTED WITH ASYNC AWAIT. USE SEMAPHORESLIM
+        private SemaphoreSlim requestMonitor = new SemaphoreSlim(1,1); //Only 1 request to be granted (for this client).
         private Uri _base_uri;
         private string request_token;
         private ConcurrentDictionary<string, IEnumerable<string>> _requestHeaders = new ConcurrentDictionary<string, IEnumerable<string>>();
@@ -40,6 +41,7 @@ namespace Haley.Utils
         #region Constructors
         public MicroClient(string base_address)
         {
+            Id = Guid.NewGuid().ToString();
             _base_uri = getBaseUri(base_address);
             if (_base_uri == null)
             {
@@ -66,20 +68,16 @@ namespace Haley.Utils
         }
         public IClient ClearRequestHeaders()
         {
-            StartRequestMonitor();
             _requestHeaders = new ConcurrentDictionary<string, IEnumerable<string>>(); //Clear the requestheaders.
-            Monitor.Exit(requestMonitor); //Since we will not be making any calls after this clear request headers, we can exit the monitor.
             return this;
         }
         public IClient AddRequestHeaders(string name, string value)
         {
-            StartRequestMonitor();
             _requestHeaders?.TryAdd(name, new List<string>() { value });
             return this;
         }
         public IClient AddRequestHeaders(string name, List<string> values)
         {
-            StartRequestMonitor(); //We are monitoring this now. Only when a send call is invoked, this will be released.
             _requestHeaders?.TryAdd(name, values);
             return this;
         }
@@ -92,13 +90,11 @@ namespace Haley.Utils
         /// <returns></returns>
         public IClient AddRequestAuthentication(string token, string token_prefix = "Bearer")
         {
-            StartRequestMonitor();
             request_token = _getJWT(token, token_prefix);
             return this;
         }
         public IClient ClearRequestAuthentication()
         {
-            StartRequestMonitor(); //May be another thread is already using the authentication. So don't remove it until the monitor has exited.
             request_token = string.Empty;
             return this;
         }
@@ -269,14 +265,17 @@ namespace Haley.Utils
             if (add_cancellation_token)
             {
                 message = await BaseClient.SendAsync(request,cancellation_token);
+                //After the token is added, we just remove it.
+                cancellation_token = default(CancellationToken);
+                add_cancellation_token = false;
             }
             else
             {
                 message = await BaseClient.SendAsync(request);
             }
 
-            //After you have send the request, there is no need to block any other thread, since the private variables would have been consumed. So release them.
-            StopRequestMonitor();
+            ////After you have send the request, there is no need to block any other thread, since the private variables would have been consumed. So release them.
+            //UnBlockClient();
 
             var _response = new BaseResponse() { OriginalResponse = message };
             return _response;
@@ -284,10 +283,8 @@ namespace Haley.Utils
         #endregion
 
         #region Implemented Methods
-        public IClient AddCancellationToken(CancellationToken token)
+        public IClient AddRequestCancellationToken(CancellationToken token)
         {
-            //Token specific this call.
-            StartRequestMonitor(); //Now another thread cannot access change this, until it is released.
             //Adds only for this request.
             cancellation_token = token;
             add_cancellation_token = true;
@@ -304,20 +301,41 @@ namespace Haley.Utils
                 return null;
             }
         }
-        
+
+        #endregion
+
+        #region ThreadSafe Implementation
+        public IClient BlockClient()
+        {
+            WriteBlockDebugMessage("Block Begin");
+            BlockClientAsync().Wait();
+            WriteBlockDebugMessage("Block Complete");
+            return this; //Block and return this client. So no other thread can use until this is unblocked.
+        }
+        public IClient UnBlockClient()
+        {
+            if (requestMonitor.CurrentCount == 1)
+            {
+                WriteBlockDebugMessage("Release Begin");
+                requestMonitor.Release(1);
+                WriteBlockDebugMessage("Release Complete");
+            }
+            return this;
+        }
+
+        private void WriteBlockDebugMessage(string message)
+        {
+            Debug.WriteLine($@"{message}: Count : {requestMonitor.CurrentCount} at  {DateTime.Now.ToLongTimeString()} for client {Id}");
+        }
+        public async Task BlockClientAsync()
+        {
+            await requestMonitor.WaitAsync(); //All requests will wait here.
+        }
+
         #endregion
 
         #region Helpers
-        private void StartRequestMonitor()
-        {
-            Monitor.Enter(requestMonitor);
-            //Implement a timer (lets say 30 seconds to unlock the monitor if it is not released yet.).
-        }
 
-        private void StopRequestMonitor()
-        {
-            Monitor.Exit(requestMonitor);
-        }
         private string _getJWT(string token, string token_prefix)
         {
             try
@@ -428,11 +446,6 @@ namespace Haley.Utils
         private Uri getBaseUri(Uri inputURI)
         {
             return getBaseUri(inputURI.AbsoluteUri);
-        }
-        public IClient ExitAllMonitors()
-        {
-            Monitor.Exit(requestMonitor);
-            return this;
         }
         #endregion
     }

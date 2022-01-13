@@ -23,6 +23,7 @@ namespace Haley.Abstractions
     /// </summary>
     public interface IClient
     {
+        string Id { get; }
         /// <summary>
         /// The Base HTTPClient
         /// </summary>
@@ -75,7 +76,7 @@ namespace Haley.Abstractions
         /// <param name="token_prefix"></param>
         /// <returns></returns>
         IClient AddClientHeaderAuthentication(string token, string token_prefix = "Bearer");
-        IClient AddCancellationToken(CancellationToken cancellation_token);
+        IClient AddRequestCancellationToken(CancellationToken cancellation_token);
         Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class;
         Task<StringResponse> GetAsync(string resource_url);
         Task<StringResponse> GetAsync(string resource_url, Dictionary<string, string> parameters);
@@ -88,5 +89,17 @@ namespace Haley.Abstractions
         Task<IResponse> SendAsync(string url, IEnumerable<RestParam> paramList, Method method = Method.Get);
         Task<IResponse> SendAsync(string url, HttpContent content, Method method = Method.Get);
         Task<IResponse> SendAsync(HttpRequestMessage request);
+        /// <summary>
+        /// All calls to the client is blocked.
+        /// </summary>
+        /// <returns></returns>
+        IClient BlockClient();
+
+        Task BlockClientAsync();
+        /// <summary>
+        /// Client is unblocked.
+        /// </summary>
+        /// <returns></returns>
+        IClient UnBlockClient();
     }
 }
