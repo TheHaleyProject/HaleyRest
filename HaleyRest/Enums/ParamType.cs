@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace Haley.Enums
 {
-    public enum DataType
+    public enum ParamType
     {
+        Default,
         QueryString,
         RequestBody,
-        Header
     }
 }

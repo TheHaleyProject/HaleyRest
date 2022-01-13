@@ -36,7 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="System.Text.Json" Version="5.0.2" />
+    <PackageReference Include="System.Text.Json" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,7 +57,7 @@
     </When>
     <Otherwise>
      <ItemGroup>
-       <PackageReference Include="Haley.Extensions" Version="2.0.2" />
+       <PackageReference Include="Haley.Extensions" Version="2.0.3" />
 	 </ItemGroup>
     </Otherwise>
 </Choose>  

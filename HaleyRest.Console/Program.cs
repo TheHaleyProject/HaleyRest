@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using Haley.Utils;
 using Haley.Models;
+using Haley.Rest;
 using System.Threading.Tasks;
 
 namespace HaleyRest.ConsoleTest
@@ -12,20 +13,20 @@ namespace HaleyRest.ConsoleTest
         {
             Console.WriteLine("Hello World");
             prepareClients();
-            apiTest();
+            apiTest(clientNames.publicAPI, "entries");
+            apiTest(clientNames.gorest, "/public/v1/users/123/posts");
         }
 
         static void prepareClients()
         {
-            ClientStore.AddClient(clientNames.jsonplaceHolder, new MicroClient(@"https://jsonplaceholder.typicode.com"));
-            ClientStore.AddClient(clientNames.gorest, new MicroClient(@"https://gorest.co.in/"));
-            ClientStore.AddClient(clientNames.publicAPI, new MicroClient(@"https://api.publicapis.org/"));
+            ClientStore.AddClient(clientNames.jsonplaceHolder, @"https://jsonplaceholder.typicode.com");
+            ClientStore.AddClient(clientNames.gorest, @"https://gorest.co.in/");
+            ClientStore.AddClient(clientNames.publicAPI, @"https://api.publicapis.org");
         }
 
-        static async void apiTest()
+        static void apiTest(clientNames name,string url)
         {
-            var _response = ClientStore.GetClient(clientNames.publicAPI).InvokeAsync("entries", null).Result;
-
+            var _response = ClientStore.GetClient(name).GetAsync(url, null).Result;
         }
     }
     public enum clientNames

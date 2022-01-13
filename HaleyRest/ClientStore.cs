@@ -11,26 +11,36 @@ using System.Runtime.CompilerServices;
 using Haley.Models;
 using Haley.Enums;
 using System.Text.Json;
+using Haley.Utils;
+using Haley.Abstractions;
 using System.Collections.Concurrent;
 
-namespace Haley.Utils
+namespace Haley.Rest
 {
     public static class ClientStore
     {
-        private static ConcurrentDictionary<string, MicroClient> _clientDictionary = new ConcurrentDictionary<string, MicroClient>();
+        private static ConcurrentDictionary<string, IClient> _clientDictionary = new ConcurrentDictionary<string, IClient>();
 
-        public static MicroClient GetClient(string key)
+        /// <summary>
+        /// For each call, this will remove any stored request headers added before and will return the client
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static IClient GetClient(string key)
         {
              _clientDictionary.TryGetValue(key, out var result);
+             result
+                .ClearRequestHeaders()
+                .ClearRequestAuthentication(); //Always clear the header when you try to get it via the client store.
              return result;
         }
-        public static MicroClient GetClient(Enum @enum)
+        public static IClient GetClient(Enum @enum)
+        
         {return GetClient(@enum.getKey());}
 
-        public static MicroClient AddClient(Enum @enum,MicroClient client)
+        public static IClient AddClient(Enum @enum, IClient client)
         { return AddClient(@enum.getKey(), client);}
-
-        public static MicroClient AddClient(string key, MicroClient client)
+        public static IClient AddClient(string key, IClient client)
         {
             if (client == null) return null;
             if (_clientDictionary.TryAdd(key, client))
@@ -42,10 +52,10 @@ namespace Haley.Utils
                 return GetClient(key); //if key already exists.
             }
         }
-        public static MicroClient AddClient(Enum @enum, string base_uri)
+        public static IClient AddClient(Enum @enum, string base_uri)
         { return AddClient(@enum.getKey(), new MicroClient(base_uri)); }
 
-        public static MicroClient AddClient(string key, string base_uri)
+        public static IClient AddClient(string key, string base_uri)
         {return AddClient(key, new MicroClient(base_uri));}
 
         public static bool RemoveClient(string key)
