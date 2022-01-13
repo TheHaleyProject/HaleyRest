@@ -55,7 +55,6 @@ namespace Haley.Utils
             ResetClientHeaders();
             semaphoreTimer.Elapsed += SemaPhoreTimer_Elapsed;
         }
-
         private void SemaPhoreTimer_Elapsed(object sender, Trs.ElapsedEventArgs e)
         {
             WriteTimerDebugMessage("Timer Elapsed","Elapsed call.");
@@ -343,7 +342,6 @@ namespace Haley.Utils
             }
             Debug.WriteLine(towrite);
         }
-
         public IClient BlockClient(string message = null)
         {
             return BlockClient(0,message);
@@ -429,14 +427,20 @@ namespace Haley.Utils
 
         private string _createQuery(string url, IEnumerable<RestParam> paramList)
         {
-            var _query = HttpUtility.ParseQueryString(url);
+            string result = url;
+            var _query = HttpUtility.ParseQueryString(string.Empty);
 
             //Assuming all the inputs are serialzied or direct values.
             foreach (var param in paramList.Where(p=>p.ParamType == ParamType.QueryString))
             {
                 _query[param.Key] = param.Value as string;
             }
-            return _query.ToString();
+            var _formed_query = _query.ToString();
+            if(!string.IsNullOrWhiteSpace(_formed_query))
+            {
+                result = result + "?" + _formed_query;
+            }
+            return result;
         }
 
         private (HttpContent content,string url) processInputs(string url, IEnumerable<RestParam> paramList, Method method)

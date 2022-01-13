@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Haley.Abstractions;
 using Haley.Enums;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace HaleyRest.ConsoleTest
 {
@@ -36,7 +37,7 @@ namespace HaleyRest.ConsoleTest
             Thread t1 = new Thread(new ThreadStart(()=> {_res1 =  apiTest(clientNames.publicAPI, "entries","Thread 1").Result; }));
             Thread t2 = new Thread(new ThreadStart(() => { _res2 = apiTest(clientNames.gorest, "/public/v1/users/123/posts", "Thread 2").Result; }));
             Thread t3 = new Thread(new ThreadStart(() => { _res3 = apiTest2(clientNames.publicAPI, "entries", "Thread 3").Result; }));
-            Thread t4 = new Thread(new ThreadStart(() => { _res4 = apiTest3(clientNames.publicAPI, "entries", "Thread 4").Result; }));
+            Thread t4 = new Thread(new ThreadStart(() => { _res4 = apiTest3(clientNames.publicAPI, "random", "Thread 4").Result; }));
 
             t1.Start();
             t2.Start();
@@ -76,8 +77,10 @@ namespace HaleyRest.ConsoleTest
             var _client = ClientStore.GetClient(name);
             try
             {
+                Dictionary<string, string> _params = new Dictionary<string, string>();
+                _params.Add("category", "animals");
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.BlockClient(5, message).GetAsync(url);
+                var _response = await _client.BlockClient(5, message).GetAsync(url,_params);
                 return _response;
             }
             catch (Exception ex)
@@ -92,7 +95,7 @@ namespace HaleyRest.ConsoleTest
             try
             {
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.BlockClient(6, message).GetAsync(url);
+                var _response = await _client.BlockClient(6, message).SendAsync(url,new RestParam("auth","null",true));
                 return _response;
             }
             catch (Exception ex)
