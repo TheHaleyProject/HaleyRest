@@ -93,13 +93,15 @@ namespace Haley.Abstractions
         /// All calls to the client is blocked.
         /// </summary>
         /// <returns></returns>
-        IClient BlockClient();
+        IClient BlockClient(string message = null);
+        IClient BlockClient(double block_seconds, string message = null);
 
-        Task BlockClientAsync();
+        Task BlockClientAsync(string message = null);
+        Task BlockClientAsync(double block_seconds, string message = null);
         /// <summary>
         /// Client is unblocked.
         /// </summary>
         /// <returns></returns>
-        IClient UnBlockClient();
+        IClient UnBlockClient(string message = null);
     }
 }

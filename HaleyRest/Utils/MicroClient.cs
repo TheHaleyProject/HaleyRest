@@ -17,6 +17,7 @@ using System.Text.Json;
 using System.Diagnostics;
 using System.Collections.Concurrent;
 using Haley.Models;
+using Trs =System.Timers;
 using System.Web;
 
 namespace Haley.Utils
@@ -29,13 +30,15 @@ namespace Haley.Utils
         public HttpClient BaseClient { get; }
         public string Id { get; }
         #region Attributes
-        //private object requestMonitor = new object(); //DONOT USE LOCK OR MONITOR. IT DOESN'T WORK AS EXPECTED WITH ASYNC AWAIT. USE SEMAPHORESLIM
-        private SemaphoreSlim requestMonitor = new SemaphoreSlim(1,1); //Only 1 request to be granted (for this client).
+        //private object requestSemaphore = new object(); //DONOT USE LOCK OR MONITOR. IT DOESN'T WORK AS EXPECTED WITH ASYNC AWAIT. USE SEMAPHORESLIM
+        private SemaphoreSlim requestSemaphore = new SemaphoreSlim(1,1); //Only 1 request to be granted (for this client).
         private Uri _base_uri;
         private string request_token;
         private ConcurrentDictionary<string, IEnumerable<string>> _requestHeaders = new ConcurrentDictionary<string, IEnumerable<string>>();
         private CancellationToken cancellation_token = default(CancellationToken);
         private bool add_cancellation_token = false;
+        Trs.Timer semaphoreTimer = new Trs.Timer(15000) { AutoReset = false}; //15K milliseconds is 15 seconds.
+
         #endregion
 
         #region Constructors
@@ -50,11 +53,20 @@ namespace Haley.Utils
             }
             BaseClient = new HttpClient(); //Base client is read only. So initiate only once.
             ResetClientHeaders();
+            semaphoreTimer.Elapsed += SemaPhoreTimer_Elapsed;
         }
+
+        private void SemaPhoreTimer_Elapsed(object sender, Trs.ElapsedEventArgs e)
+        {
+            WriteTimerDebugMessage("Timer Elapsed","Elapsed call.");
+            UnBlockClient("Elapsed Call");
+        }
+
         public MicroClient(Uri base_uri) : this(base_uri.AbsoluteUri) { }
         #endregion
 
         #region FluentMethods
+        
         public IClient ResetClientHeaders()
         {
             //remains the same throught the life time of this client.
@@ -139,7 +151,9 @@ namespace Haley.Utils
 
             SerializedResponse<T> result = new SerializedResponse<T>();
             var _response = await SendAsync(resource_url, paramslist, Method.Get);
+            result.OriginalResponse = _response.OriginalResponse; //Set the original response.
             //Response we receive will be base response.
+
             if (_response.IsSuccess)
             {
                 var _cntnt = _response.Content;
@@ -147,7 +161,14 @@ namespace Haley.Utils
                 result.StringContent = _strCntnt;
                 try
                 {
-                    result.SerializedContent = JsonSerializer.Deserialize<T>(_strCntnt);
+                    if (typeof(T) == typeof(string))
+                    {
+                        result.SerializedContent = _strCntnt as T;
+                    }
+                    else
+                    {
+                        result.SerializedContent = JsonSerializer.Deserialize<T>(_strCntnt);
+                    }
                 }
                 catch (Exception)
                 {
@@ -219,7 +240,6 @@ namespace Haley.Utils
                 case Method.Get:
                     request_method = HttpMethod.Get;
                     break;
-                //return await BaseClient.GetAsync(url);
                 case Method.Post:
                     request_method = HttpMethod.Post;
                     break;
@@ -305,33 +325,67 @@ namespace Haley.Utils
         #endregion
 
         #region ThreadSafe Implementation
-        public IClient BlockClient()
+        private void WriteBlockDebugMessage(string title,string message = null)
         {
-            WriteBlockDebugMessage("Block Begin");
-            BlockClientAsync().Wait();
-            WriteBlockDebugMessage("Block Complete");
+            string towrite = $@"Microclient ==> {title}: Count : {requestSemaphore.CurrentCount} at  {DateTime.Now.ToLongTimeString()} for client {Id} with address {_base_uri}";
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                towrite = towrite + $@" ===> {message}";
+            }
+            Debug.WriteLine(towrite);
+        }
+        private void WriteTimerDebugMessage(string title, string message = null)
+        {
+            string towrite = $@"Microclient ==> {title} with {semaphoreTimer.Interval} milliseconds : at {DateTime.Now.ToLongTimeString()} for client {Id} with address {_base_uri}";
+            if (!string.IsNullOrWhiteSpace(message))
+            {
+                towrite = towrite + $@" ===> {message}";
+            }
+            Debug.WriteLine(towrite);
+        }
+
+        public IClient BlockClient(string message = null)
+        {
+            return BlockClient(0,message);
+        }
+        public IClient BlockClient(double block_seconds = 15, string message = null)
+        {
+            BlockClientAsync(block_seconds,message).Wait();
             return this; //Block and return this client. So no other thread can use until this is unblocked.
         }
-        public IClient UnBlockClient()
+        public async Task BlockClientAsync(string message = null)
         {
-            if (requestMonitor.CurrentCount == 1)
+            await BlockClientAsync(0,message);
+        }
+        public async Task BlockClientAsync(double block_seconds = 15, string message = null)
+        {
+            WriteBlockDebugMessage("Waiting",message);
+            await requestSemaphore.WaitAsync(); //All requests will wait here.
+            WriteBlockDebugMessage("Blocked",message);
+            semaphoreTimer.Stop(); //It it is running for someother reason.
+            if (block_seconds > 0)
             {
-                WriteBlockDebugMessage("Release Begin");
-                requestMonitor.Release(1);
-                WriteBlockDebugMessage("Release Complete");
+                semaphoreTimer.Interval = block_seconds * 1000.0; //If the interval is 0 , then we donot start the timer. change seconds into milliseconds.
+                WriteTimerDebugMessage("Timer Started",message);
+                semaphoreTimer.Start(); //Star the timer.
+            }
+        }
+        public IClient UnBlockClient(string message = null)
+        {
+            if (!requestSemaphore.Wait(0)) //Just to check if we are able to enter the current thread. 
+            {
+                if (semaphoreTimer.Enabled)
+                {
+                    semaphoreTimer.Stop(); //If we prematurely decide to Unblock the client, the timer can be stopped.
+                    WriteTimerDebugMessage("Timer Stopped",message);
+                }
+                
+                //If we are not able to enter inside then it means that we already have some other process going on inside. We just release it.
+                requestSemaphore.Release();
+                WriteBlockDebugMessage("Released", message);
             }
             return this;
         }
-
-        private void WriteBlockDebugMessage(string message)
-        {
-            Debug.WriteLine($@"{message}: Count : {requestMonitor.CurrentCount} at  {DateTime.Now.ToLongTimeString()} for client {Id}");
-        }
-        public async Task BlockClientAsync()
-        {
-            await requestMonitor.WaitAsync(); //All requests will wait here.
-        }
-
         #endregion
 
         #region Helpers

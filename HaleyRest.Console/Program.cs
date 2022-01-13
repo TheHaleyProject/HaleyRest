@@ -33,10 +33,10 @@ namespace HaleyRest.ConsoleTest
             IResponse _res3 = null;
             IResponse _res4 = null;
 
-            Thread t1 = new Thread(new ThreadStart(()=> {_res1 =  apiTest(clientNames.publicAPI, "entries").Result; }));
-            Thread t2 = new Thread(new ThreadStart(() => { _res2 = apiTest(clientNames.gorest, "/public/v1/users/123/posts").Result; }));
-            Thread t3 = new Thread(new ThreadStart(() => { _res3 = apiTest2(clientNames.publicAPI, "entries").Result; }));
-            Thread t4 = new Thread(new ThreadStart(() => { _res4 = apiTest(clientNames.publicAPI, "entries").Result; }));
+            Thread t1 = new Thread(new ThreadStart(()=> {_res1 =  apiTest(clientNames.publicAPI, "entries","Thread 1").Result; }));
+            Thread t2 = new Thread(new ThreadStart(() => { _res2 = apiTest(clientNames.gorest, "/public/v1/users/123/posts", "Thread 2").Result; }));
+            Thread t3 = new Thread(new ThreadStart(() => { _res3 = apiTest2(clientNames.publicAPI, "entries", "Thread 3").Result; }));
+            Thread t4 = new Thread(new ThreadStart(() => { _res4 = apiTest3(clientNames.publicAPI, "entries", "Thread 4").Result; }));
 
             t1.Start();
             t2.Start();
@@ -53,13 +53,13 @@ namespace HaleyRest.ConsoleTest
             }
         }
 
-        static async Task<IResponse> apiTest(clientNames name,string url)
+        static async Task<IResponse> apiTest(clientNames name,string url,string message)
         {
             var _client = ClientStore.GetClient(name);
             try
             {
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.BlockClient().GetAsync(url);
+                var _response = await _client.BlockClient(message).GetAsync(url);
                 return _response;
             }
             catch (Exception ex)
@@ -68,25 +68,36 @@ namespace HaleyRest.ConsoleTest
             }
             finally
             {
-                _client.UnBlockClient();
+                _client.UnBlockClient(message);
             }
         }
-        static async Task<IResponse> apiTest2(clientNames name, string url)
+        static async Task<IResponse> apiTest2(clientNames name, string url, string message)
         {
             var _client = ClientStore.GetClient(name);
             try
             {
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.UnBlockClient().GetAsync(url);
+                var _response = await _client.BlockClient(5, message).GetAsync(url);
                 return _response;
             }
             catch (Exception ex)
             {
                 throw;
             }
-            finally
+        }
+
+        static async Task<IResponse> apiTest3(clientNames name, string url, string message)
+        {
+            var _client = ClientStore.GetClient(name);
+            try
             {
-                _client.UnBlockClient();
+                Console.WriteLine($@"Calling {name}");
+                var _response = await _client.BlockClient(6, message).GetAsync(url);
+                return _response;
+            }
+            catch (Exception ex)
+            {
+                throw;
             }
         }
     }
