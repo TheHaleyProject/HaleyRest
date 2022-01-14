@@ -6,13 +6,10 @@ using System.Threading.Tasks;
 
 namespace Haley.Enums
 {
-    public enum ContentType
+    public enum RequestBodyType
     {
-        String,
-        ByteArray,
-        Json,
-        MultiPart,
-        Stream,
-        FormURLEncoded
+        StringContent,
+        ByteArrayContent,
+        StreamContent
     }
 }

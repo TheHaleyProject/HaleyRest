@@ -16,13 +16,14 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Product>Haley Helpers</Product>
     <PackageId>Haley.Rest</PackageId>
-    <Version>1.0.0.1-development</Version>
+    <Version>1.0.1-beta-1</Version>
     <PackageProjectUrl>https://github.com/rmsmech/HaleyRest</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rmsmech/HaleyRest</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <IncludeSymbols>true</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	  <PackageReleaseNotes>Rest client wrapper for RestSharp</PackageReleaseNotes>
+	  <PackageReleaseNotes>Implemented a wrapper for HttpClient. Added ClientStore for multiple client handling. Use BlockClient method for thread-safe calls.
+Fluent design pattern implemented for constructors</PackageReleaseNotes>
   </PropertyGroup>
   
 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

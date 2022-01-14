@@ -23,7 +23,7 @@ namespace Haley.Utils
                 string _path = null;
                 _path = Path.Combine(Path.GetTempPath() + file_name);
                 if (File.Exists(_path)) File.Delete(_path); 
-                Uri _download_url = new Uri((string)download_link);
+                Uri _download_url = new Uri(download_link);
                 using (var _client = new WebClient())
                 {
                     _client.DownloadFile(_download_url, _path);

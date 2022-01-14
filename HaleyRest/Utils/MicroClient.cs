@@ -23,13 +23,14 @@ using System.Web;
 namespace Haley.Utils
 {
     /// <summary>
-    /// A simple straightforward HTTP helper client.
+    /// A simple straightforward HTTPClient Wrapper.
     /// </summary>
     public sealed class MicroClient :IClient
     {
         public HttpClient BaseClient { get; }
         public string Id { get; }
         #region Attributes
+        private static string boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
         //private object requestSemaphore = new object(); //DONOT USE LOCK OR MONITOR. IT DOESN'T WORK AS EXPECTED WITH ASYNC AWAIT. USE SEMAPHORESLIM
         private SemaphoreSlim requestSemaphore = new SemaphoreSlim(1,1); //Only 1 request to be granted (for this client).
         private Uri _base_uri;
@@ -38,7 +39,6 @@ namespace Haley.Utils
         private CancellationToken cancellation_token = default(CancellationToken);
         private bool add_cancellation_token = false;
         Trs.Timer semaphoreTimer = new Trs.Timer(15000) { AutoReset = false}; //15K milliseconds is 15 seconds.
-
         #endregion
 
         #region Constructors
@@ -402,21 +402,86 @@ namespace Haley.Utils
             }
         }
 
-        private HttpContent _createContent(IEnumerable<RestParam> paramList, Method method)
+        private HttpContent _createContent(RestParam param)
         {
             try
             {
                 HttpContent result = null;
-
-                var target = paramList.FirstOrDefault(p => p.ParamType == ParamType.RequestBody);
-
-                if (target == null)
+                switch (param.BodyType)
                 {
-                    //Process and add this content to the body as required.
-                    return new StringContent(string.Empty, System.Text.Encoding.UTF8, "application/json");
+                    case RequestBodyType.StringContent:
+                        string _serialized_content = null, mediatype = null;
+                        switch (param.StringBodyFormat)
+                        {
+                            case StringContentFormat.Json:
+                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToJson();
+                                mediatype = "application/json";
+                                break;
+                            case StringContentFormat.XML:
+                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToXml().ToString();
+                                mediatype = "application/xml";
+                                break;
+                        }
+                        result = new StringContent(_serialized_content, Encoding.UTF8, mediatype);
+                        break;
+                    case RequestBodyType.ByteArrayContent:
+                    case RequestBodyType.StreamContent:
+                        if (param.Value is byte[] byteContent)
+                        {
+                            //If byte content.
+                            result = new ByteArrayContent(byteContent,0,byteContent.Length);
+                        }
+                        else if(param.Value is Stream streamContent)
+                        {
+                            //If stream content.
+                            result = new StreamContent(streamContent);
+                            result.Headers.Remove("Content-Type");
+                            result.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = param.FileName ?? "attachment" };
+                        }
+                        else
+                        {
+                            param.BodyType = RequestBodyType.StringContent;
+                            return _createContent(param); //If the input is not byte array, then change it to string content and process again.
+                        }
+                        break;
+                }
+                return result;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+        private HttpContent _createContent(IEnumerable<RestParam> paramList, Method method)
+        {
+            //If body count is more than one, add as mulit form data. Else add as a single content of the specific body type.
+            try
+            {
+                HttpContent result = null;
+                var _requestbodies = paramList.Where(p => p.ParamType == ParamType.RequestBody);
+
+                if (_requestbodies == null || _requestbodies?.Count() == 0) return result;
+
+                if (_requestbodies.Count() == 1)
+                {
+                    //If one item add as a direct body.
+                    var target = _requestbodies.FirstOrDefault();
+                    result = _createContent(target);
+                }
+                else
+                {
+                    //For more than one add as form data.
+                    MultipartFormDataContent form_content = new MultipartFormDataContent();
+                    form_content.Headers.Remove("Content-Type");
+                    form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary);
+                    foreach (var item in _requestbodies)
+                    {
+                        form_content.Add(_createContent(item),item.Key,item.FileName); //Also add the key.
+                    }
+                    result = form_content;
                 }
 
-                result = new StringContent(target.IsSerialized?target.Value as string:target.ToJson(), Encoding.UTF8, "application/json");
                 return result;
             }
             catch (Exception ex)
@@ -453,12 +518,8 @@ namespace Haley.Utils
                 HttpContent processed_content = null;
                 string processed_url = url;
 
-                //If this is a get method, do not waste time in processing the parameter list.
-                if (method != Method.Get)
-                {
-                    processed_content = _createContent(paramList, method);
-                }
-
+                //It is not a standard practise to send a request body with GET. But it is a possiblity that it could be sent.
+                processed_content = _createContent(paramList, method);
                 processed_url = _createQuery(url, paramList);
                 return (processed_content, processed_url);
             }

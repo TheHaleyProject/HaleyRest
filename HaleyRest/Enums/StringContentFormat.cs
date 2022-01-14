@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace Haley.Enums
 {
-    public enum ReturnFormat
+    public enum StringContentFormat
     {
         Json,
         XML,
-        None
     }
 }
