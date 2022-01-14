@@ -1,4 +1,4 @@
-﻿<Window x:Class="RestExamples.MainWindow"
+﻿<hw:PlainWindow x:Class="RestExamples.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,8 +9,8 @@
         x:Name="wndwMain"
         xmlns:local="clr-namespace:RestExamples"
         mc:Ignorable="d"
-        Title="MainWindow" Height="650" Width="1000">
-    <Grid>
+        Title="MainWindow" Height="650" Width="1000" ControlBoxStyle="Mac" CornerRadius="10" Background="#FFE5E5E5" hw:Icon.DefaultColor="Gray">
+    <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition MinWidth="120"/>
             <ColumnDefinition Width="4"/>
@@ -111,4 +111,4 @@
         </Grid>
         
     </Grid>
-</Window>
+</hw:PlainWindow>
