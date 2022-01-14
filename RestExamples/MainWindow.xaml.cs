@@ -23,6 +23,7 @@ namespace RestExamples
         public MainWindow()
         {
             InitializeComponent();
+            this.DataContext = new MainVM();
         }
     }
 }

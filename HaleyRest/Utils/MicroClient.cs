@@ -29,43 +29,50 @@ namespace Haley.Utils
     {
         public HttpClient BaseClient { get; }
         public string Id { get; }
+        public string BaseURI { get;}
+        public string FriendlyName { get; }
         #region Attributes
-        private static string boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
+        Func<HttpRequestMessage, Task<bool>> RequestvalidationCallBack;
+        HttpClientHandler handler = new HttpClientHandler();
+        static string boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
         //private object requestSemaphore = new object(); //DONOT USE LOCK OR MONITOR. IT DOESN'T WORK AS EXPECTED WITH ASYNC AWAIT. USE SEMAPHORESLIM
-        private SemaphoreSlim requestSemaphore = new SemaphoreSlim(1,1); //Only 1 request to be granted (for this client).
-        private Uri _base_uri;
-        private string request_token;
-        private ConcurrentDictionary<string, IEnumerable<string>> _requestHeaders = new ConcurrentDictionary<string, IEnumerable<string>>();
-        private CancellationToken cancellation_token = default(CancellationToken);
-        private bool add_cancellation_token = false;
+        SemaphoreSlim requestSemaphore = new SemaphoreSlim(1,1); //Only 1 request to be granted (for this client).
+        Uri _base_uri;
+        string request_token;
+        ConcurrentDictionary<string, IEnumerable<string>> _requestHeaders = new ConcurrentDictionary<string, IEnumerable<string>>();
+        CancellationToken cancellation_token = default(CancellationToken);
+        bool add_cancellation_token = false;
         Trs.Timer semaphoreTimer = new Trs.Timer(15000) { AutoReset = false}; //15K milliseconds is 15 seconds.
         #endregion
 
         #region Constructors
-        public MicroClient(string base_address)
+        public MicroClient(string base_address,string friendly_name ,Func<HttpRequestMessage, Task<bool>> request_validationcallback)
         {
             Id = Guid.NewGuid().ToString();
+            BaseURI = base_address;
             _base_uri = getBaseUri(base_address);
+            RequestvalidationCallBack = request_validationcallback;
+            if (string.IsNullOrWhiteSpace(friendly_name)) friendly_name = base_address;
+            FriendlyName = friendly_name;
             if (_base_uri == null)
             {
                 Debug.WriteLine($@"ERROR: Base URI is null. MicroClient cannot be created.");
                 return;
             }
-            BaseClient = new HttpClient(); //Base client is read only. So initiate only once.
+            BaseClient = new HttpClient(handler,false); //Base client is read only. So initiate only once.
             ResetClientHeaders();
             semaphoreTimer.Elapsed += SemaPhoreTimer_Elapsed;
         }
-        private void SemaPhoreTimer_Elapsed(object sender, Trs.ElapsedEventArgs e)
-        {
-            WriteTimerDebugMessage("Timer Elapsed","Elapsed call.");
-            UnBlockClient("Elapsed Call");
-        }
+       
 
-        public MicroClient(Uri base_uri) : this(base_uri.AbsoluteUri) { }
+        public MicroClient(Uri base_uri, string friendly_name = null) : this(base_uri.AbsoluteUri, friendly_name) { }
+        public MicroClient(string base_uri, string friendly_name = null) : this(base_uri, friendly_name,null) { }
+        public MicroClient(string base_uri) : this(base_uri, base_uri, null) { }
+      
         #endregion
 
         #region FluentMethods
-        
+
         public IClient ResetClientHeaders()
         {
             //remains the same throught the life time of this client.
@@ -150,23 +157,18 @@ namespace Haley.Utils
 
             SerializedResponse<T> result = new SerializedResponse<T>();
             var _response = await SendAsync(resource_url, paramslist, Method.Get);
-            result.OriginalResponse = _response.OriginalResponse; //Set the original response.
-            //Response we receive will be base response.
 
-            if (_response.IsSuccess)
+            if (_response.IsSuccess && _response is StringResponse _strRspns)
             {
-                var _cntnt = _response.Content;
-                var _strCntnt = await _cntnt.ReadAsStringAsync();
-                result.StringContent = _strCntnt;
                 try
                 {
                     if (typeof(T) == typeof(string))
                     {
-                        result.SerializedContent = _strCntnt as T;
+                        result.SerializedContent = _strRspns.StringContent as T;
                     }
                     else
                     {
-                        result.SerializedContent = JsonSerializer.Deserialize<T>(_strCntnt);
+                        result.SerializedContent = JsonSerializer.Deserialize<T>(_strRspns.StringContent);
                     }
                 }
                 catch (Exception)
@@ -182,7 +184,7 @@ namespace Haley.Utils
         #region Post Methods
         public async Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized = false) 
         {
-            return await PostAsync(resource_url, new RestParam("data", content, is_serialized, ParamType.RequestBody));
+            return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
         }
         public async Task<IResponse> PostAsync(string resource_url, RestParam param)
         {
@@ -197,34 +199,20 @@ namespace Haley.Utils
         #region Send Methods
         public async Task<IResponse> SendAsync(string url, object content, Method method = Method.Get, ParamType param_type = ParamType.Default, bool is_serialized = false)
         {
-            if (param_type == ParamType.Default)
-            {
-                //User has not set the type specifically, We try to identify which type is best in this situation.
-                //When we have a single content, then we decide if we need to add it as a header value or post body.
-                switch (method)
-                {
-                    case Method.Post:
-                    case Method.Delete:
-                    case Method.Update:
-                        param_type = ParamType.RequestBody; //if post, we then set the parameter as body
-                        break;
-                    case Method.Get:
-                        param_type = ParamType.QueryString; //if post, we then set the parameter as body
-                        break;
-                }
-            }
-
-            return await SendAsync(url, new RestParam("data", content, is_serialized, param_type), method);
+            return await SendAsync(url, new RestParam("id", content, is_serialized, param_type), method);
         }
         public async Task<IResponse> SendAsync(string url, RestParam param, Method method = Method.Get)
         {
             //Just add this single param as a list to the send method.
             return await SendAsync(url, new List<RestParam>() { param }, method);
         }
+        #endregion
+
+        #region Main calls
         public async Task<IResponse> SendAsync(string url, IEnumerable<RestParam> paramList, Method method = Method.Get)
         {
             string inputURL = url;
-            //Here, we create content and also modify the URL (if required).
+            processParamTypes(ref paramList, method);
             var processedInputs = processInputs(inputURL, paramList, method);
             return await SendAsync(processedInputs.url, processedInputs.content, method);
         }
@@ -274,16 +262,37 @@ namespace Haley.Utils
                 }
             }
 
-            return await SendAsync(request);
+            StringResponse result = new StringResponse();
+            var _response = await SendAsync(request);
+            result.OriginalResponse = _response.OriginalResponse; //Set the original response.
+            //Response we receive will be base response.
+            if (_response.IsSuccess)
+            {
+                var _cntnt = _response.Content;
+                var _strCntnt = await _cntnt.ReadAsStringAsync();
+                result.StringContent = _strCntnt;
+
+            }
+            return result; //All calls from here will receive stringResponse content.
         }
         public async Task<IResponse> SendAsync(HttpRequestMessage request)
         {
+            //if some sort of validation callback is assigned, then call that first.
+            if (RequestvalidationCallBack != null)
+            {
+                var validation_check = await RequestvalidationCallBack.Invoke(request);
+                if (!validation_check)
+                {
+                    return new StringResponse() {StringContent = "Request Validation call back failed." }; 
+                }
+            }
+
             //Here we donot modify anything. We just send and receive the response.
 
             HttpResponseMessage message;
             if (add_cancellation_token)
             {
-                message = await BaseClient.SendAsync(request,cancellation_token);
+                message = await BaseClient.SendAsync(request, cancellation_token);
                 //After the token is added, we just remove it.
                 cancellation_token = default(CancellationToken);
                 add_cancellation_token = false;
@@ -387,7 +396,41 @@ namespace Haley.Utils
         #endregion
 
         #region Helpers
+        private void SemaPhoreTimer_Elapsed(object sender, Trs.ElapsedEventArgs e)
+        {
+            WriteTimerDebugMessage("Timer Elapsed", "Elapsed call.");
+            UnBlockClient("Elapsed Call");
+        }
+        private void processParamTypes(ref IEnumerable<RestParam> @params,Method method)
+        {
+            try
+            {
+                if (@params == null || @params?.Count() == 0) return;
 
+                //For delete, post, put, we can have, data in both query string and also in request body.
+                //For get, the data should only be in the query string. So, remove all the params except the request body.
+
+                //if paramtype is default, then we replace them with relevant types.
+                @params.Where(p=>p.ParamType == ParamType.Default)?.ToList().ForEach(q =>
+                {
+                    switch (method)
+                    {
+                        case Method.Post:
+                        case Method.Delete:
+                        case Method.Update:
+                            q.ParamType = ParamType.RequestBody; //if post, we then set the parameter as body
+                            break;
+                        case Method.Get:
+                            q.ParamType = ParamType.QueryString; //if post, we then set the parameter as body
+                            break;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.ToString());
+            }
+        }
         private string _getJWT(string token, string token_prefix)
         {
             try
@@ -401,7 +444,6 @@ namespace Haley.Utils
                 return null;
             }
         }
-
         private HttpContent _createContent(RestParam param)
         {
             try
@@ -459,6 +501,7 @@ namespace Haley.Utils
             try
             {
                 HttpContent result = null;
+                if (method == Method.Get) return result; //Get cannot have a body.
                 var _requestbodies = paramList.Where(p => p.ParamType == ParamType.RequestBody);
 
                 if (_requestbodies == null || _requestbodies?.Count() == 0) return result;
@@ -477,7 +520,14 @@ namespace Haley.Utils
                     form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary);
                     foreach (var item in _requestbodies)
                     {
-                        form_content.Add(_createContent(item),item.Key,item.FileName); //Also add the key.
+                        if (string.IsNullOrWhiteSpace(item.FileName))
+                        {
+                            form_content.Add(_createContent(item), item.Key); //Also add the key.
+                        }
+                        else
+                        {
+                            form_content.Add(_createContent(item), item.Key, item.FileName); //File name cannot be empty. Sending empty variable throws exception/
+                        }
                     }
                     result = form_content;
                 }
@@ -518,7 +568,7 @@ namespace Haley.Utils
                 HttpContent processed_content = null;
                 string processed_url = url;
 
-                //It is not a standard practise to send a request body with GET. But it is a possiblity that it could be sent.
+                //A get request cannot have a content body.
                 processed_content = _createContent(paramList, method);
                 processed_url = _createQuery(url, paramList);
                 return (processed_content, processed_url);
@@ -567,5 +617,10 @@ namespace Haley.Utils
             return getBaseUri(inputURI.AbsoluteUri);
         }
         #endregion
+
+        public override string ToString()
+        {
+            return this.FriendlyName;
+        }
     }
 }

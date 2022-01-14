@@ -5,32 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hw="http://schemas.hpod9.com/haley/wpf"
         xmlns:hm="http://schemas.hpod9.com/haley/mvvm"
+        xmlns:he="clr-namespace:Haley.Enums;assembly=Haley.Rest"
+        x:Name="wndwMain"
         xmlns:local="clr-namespace:RestExamples"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="900">
+        Title="MainWindow" Height="650" Width="1000">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
+            <ColumnDefinition MinWidth="120"/>
             <ColumnDefinition Width="4"/>
-            <ColumnDefinition Width="400"/>
+            <ColumnDefinition MinWidth="120"/>
         </Grid.ColumnDefinitions>
-        
-        <Grid Grid.Column="2" Margin="4">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
-            <TextBlock Height="25" Text="RESPONSE :" VerticalAlignment="Center" Foreground="#FF525252"/>
-            <TextBlock Height="25" Text="REQUEST :" VerticalAlignment="Center" Foreground="#FF525252" Grid.Row="2"/>
-            <TextBlock Grid.Row="1" TextWrapping="WrapWithOverflow" Background="#FFEEEEEE" Margin="4" Foreground="#FF125F93"/>
-            <TextBlock Grid.Row="3" TextWrapping="WrapWithOverflow" Background="#FFEEEEEE" Margin="4" Foreground="#FF89670F"/>
-        </Grid>
-        <Grid>
+        <Grid >
             <Grid.RowDefinitions>
                 <RowDefinition/>
-                <RowDefinition Height="250"/>
+                <RowDefinition Height="350"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
@@ -41,11 +30,85 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto"/>
                         <RowDefinition/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <hw:PlainButton Content="Add New Client" CornerRadius="5" Width="130" HorizontalAlignment="Left" Margin="3"/>
-                    <hw:PlainListView Background="{x:Null}" Grid.Row="1"/>
+                    <hw:PlainButton Content="Add New Client" CornerRadius="5" Width="130" HorizontalAlignment="Left" Margin="3" Visibility="Collapsed"/>
+                    <hw:PlainListView Background="{x:Null}" Grid.Row="1" ItemsSource="{Binding Clients,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedClient,NotifyOnSourceUpdated=True, UpdateSourceTrigger=PropertyChanged,Mode=TwoWay}" SelectionMode="Single"/>
+                    <TextBlock Text="{Binding ClientInfo,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}" Grid.Row="2" Background="#FFEAEAEA" Margin="3" Height="100" TextWrapping="Wrap"/>
+                </Grid>
+                <Grid Grid.Column="1" Margin="4">
+                    <hw:PlainListView ItemsSource="{Binding EndPoints,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedEndPoint,NotifyOnSourceUpdated=True, UpdateSourceTrigger=PropertyChanged}"/>
                 </Grid>
             </Grid>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="3">
+                    <ComboBox Width="100" ItemsSource="{Binding Source={x:Type he:Method},Converter={StaticResource EnumTypeToDescriptionList}}" Margin="5,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedMethod,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}"/>
+                    <ComboBox Width="100" ItemsSource="{Binding Source={x:Type he:RequestBodyType},Converter={StaticResource EnumTypeToDescriptionList}}" Margin="5,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedBodyType,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}"/>
+                    <ComboBox Width="100" ItemsSource="{Binding Source={x:Type he:ParamType},Converter={StaticResource EnumTypeToDescriptionList}}" Margin="5,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedParamType,NotifyOnSourceUpdated=True, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+                <hw:PlainButton Width="90" HorizontalAlignment="Right" Margin="3" CornerRadius="2" Background="#FF1A6AA2" Foreground="White" Content="SEND" Command="{Binding SendRequestCommand}"/>
+                <TabControl Grid.Row="1" Margin="3" BorderBrush="{x:Null}" Background="#FFDCDBD6">
+                    <TabItem Height="25" Width="80" Header="Raw Text" IsSelected="{Binding SelectedTab, Converter={StaticResource EqualityCheck},ConverterParameter={x:Static local:TabEnum.RawText}}">
+                        <TextBox Text="{Binding RawText,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}"/>
+                    </TabItem>
+                    <TabItem Height="25" Width="80" Header="Params" IsSelected="{Binding SelectedTab, Converter={StaticResource EqualityCheck},ConverterParameter={x:Static local:TabEnum.Parameters}}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Orientation="Horizontal">
+                                <hw:ImageButton Margin="5,2" Height="28" Width="28" hw:Icon.Default="{StaticResource plus}" Command="{Binding AddNewKvpCommand}"/>
+                            </StackPanel>
+                            <hw:PlainListView Grid.Row="1" Background="{x:Null}" ItemsSource="{Binding ParamsCollection,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}">
+                                <hw:PlainListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Height="32" Margin="5" CornerRadius="4" BorderThickness="1" BorderBrush="Gray">
+                                            <Grid x:Name="grdHolder">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition/>
+                                                    <ColumnDefinition Width="{Binding ElementName=grdHolder,Path=ActualHeight}"/>
+                                                </Grid.ColumnDefinitions>
+                                                <hw:ImageButton Grid.Column="2" Margin="3" hw:Icon.Default="{StaticResource dustbin}" CommandParameter="{Binding}" Command="{Binding ElementName=wndwMain,Path=DataContext.DeleteKVPCommand}" />
+                                                <hw:PlainTextBox Text="{Binding Key}" WaterMark="Key" Height="Auto" BorderBrush="{x:Null}" CornerRadius="4" Margin="0,0,3,0"/>
+                                                <hw:PlainTextBox Text="{Binding Value}" Grid.Column="1" WaterMark="Value" Height="Auto" BorderBrush="{x:Null}" CornerRadius="4" Margin="3,0,3,0"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </hw:PlainListView.ItemTemplate>
+                            </hw:PlainListView>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Height="25" Width="80" Header="Form Data" IsSelected="{Binding SelectedTab, Converter={StaticResource EqualityCheck},ConverterParameter={x:Static local:TabEnum.MultiFormData}}">
+
+                    </TabItem>
+                </TabControl>
+            </Grid>
         </Grid>
+        <GridSplitter Grid.Column="1" Width="3" VerticalAlignment="Stretch" HorizontalAlignment="Center"/>
+        <Grid Margin="4" Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition/>
+            </Grid.RowDefinitions>
+            <TextBlock Height="25" Text="RESPONSE :" VerticalAlignment="Center" Foreground="#FF525252"/>
+            <TextBlock Height="25" Text="REQUEST :" VerticalAlignment="Center" Foreground="#FF525252" Grid.Row="2"/>
+            <hw:FlexiScroll x:Name="flexscroll" Grid.Row="1" Margin="4" CanContentScroll="True" HorizontalScrollBarVisibility="Hidden" EnableOverLay="False" VerticalScrollBarSize="15" AutoHide="True">
+                <TextBox Text="{Binding ResponseMessage}" TextWrapping="Wrap" Background="#FFEEEEEE"  Foreground="#FF125F93" IsReadOnly="True" MaxWidth="{Binding ElementName=flexscroll,Path=ActualWidth,ConverterParameter=3, Converter={StaticResource LengthReducer}}"/>
+            </hw:FlexiScroll>
+
+            <hw:FlexiScroll x:Name="flexscroll2"  Grid.Row="3" Margin="4" CanContentScroll="True" HorizontalScrollBarVisibility="Hidden" EnableOverLay="False" VerticalScrollBarSize="15" AutoHide="True">
+                <TextBox Text="{Binding RequestMessage}" TextWrapping="Wrap" Background="#FFEEEEEE"  Foreground="#FF89670F" IsReadOnly="True" MaxWidth="{Binding ElementName=flexscroll2,Path=ActualWidth,ConverterParameter=3, Converter={StaticResource LengthReducer}}"/>
+            </hw:FlexiScroll>
+        </Grid>
+        
     </Grid>
 </Window>

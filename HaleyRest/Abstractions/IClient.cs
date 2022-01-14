@@ -24,6 +24,8 @@ namespace Haley.Abstractions
     public interface IClient
     {
         string Id { get; }
+        string FriendlyName { get; }
+        string BaseURI { get; }
         /// <summary>
         /// The Base HTTPClient
         /// </summary>
