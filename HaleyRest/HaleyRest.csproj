@@ -46,7 +46,7 @@
     </None>
   </ItemGroup>
 
- <Import Project="$(SolutionDir)ProjectReferences_$(SolutionName).txt" Condition="Exists('$(SolutionDir)ProjectReferences_$(SolutionName).txt')" />
+<Import Project="$(SolutionDir)ProjectReferences_$(SolutionName).txt" Condition="Exists('$(SolutionDir)ProjectReferences_$(SolutionName).txt')" />
 <Choose>
     <When Condition="Exists($(HaleyExtensions))">
       <ItemGroup>
@@ -61,6 +61,4 @@
 	 </ItemGroup>
     </Otherwise>
 </Choose>  
-
-
 </Project>
