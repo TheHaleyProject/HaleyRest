@@ -61,6 +61,7 @@
                     <ComboBox Width="100" ItemsSource="{Binding Source={x:Type he:Method},Converter={StaticResource EnumTypeToDescriptionList}}" Margin="5,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedMethod,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}"/>
                     <ComboBox Width="100" ItemsSource="{Binding Source={x:Type he:RequestBodyType},Converter={StaticResource EnumTypeToDescriptionList}}" Margin="5,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedBodyType,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}"/>
                     <ComboBox Width="100" ItemsSource="{Binding Source={x:Type he:ParamType},Converter={StaticResource EnumTypeToDescriptionList}}" Margin="5,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedParamType,NotifyOnSourceUpdated=True, UpdateSourceTrigger=PropertyChanged}"/>
+                    
                 </StackPanel>
                 <hw:PlainButton Width="100" HorizontalAlignment="Right" Margin="3" CornerRadius="2" Background="#FF1A6AA2" Foreground="White" Content="SEND REQUEST" Command="{Binding SendRequestCommand}"/>
                 <TabControl Grid.Row="1" Margin="3" BorderBrush="{x:Null}" Background="#FFDCDBD6">
@@ -75,6 +76,7 @@
                             </Grid.RowDefinitions>
                             <StackPanel Orientation="Horizontal">
                                 <hw:ImageButton Margin="5,2" Height="28" Width="28" hw:Icon.Default="{StaticResource plus}" Command="{Binding AddNewKvpCommand}"/>
+                                <hw:PlainCheckBox IsChecked="{Binding DictionaryAsMultiformData,Mode=TwoWay,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}" Content="Dictionary As MultiformData" VerticalAlignment="Center"/>
                             </StackPanel>
                             <hw:PlainListView Grid.Row="1" Background="{x:Null}" ItemsSource="{Binding ParamsCollection,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}">
                                 <hw:PlainListView.ItemTemplate>

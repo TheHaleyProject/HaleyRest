@@ -6,7 +6,7 @@
     <AssemblyOriginatorKeyFile>HaleyProject.snk</AssemblyOriginatorKeyFile>
     <AssemblyName>Haley.Rest</AssemblyName>
     <RootNamespace>Haley.Rest</RootNamespace>
-    <Description>A Simple Rest Client</Description>
+    <Description>A Simple HttpClient Wrapper to handle Http Requests.</Description>
     <Company>TheHaleyProject</Company>
     <Authors>Lingam</Authors>
     <Copyright>Haley 2020</Copyright>
@@ -16,14 +16,13 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Product>Haley Helpers</Product>
     <PackageId>Haley.Rest</PackageId>
-    <Version>1.0.1-beta-1</Version>
-    <PackageProjectUrl>https://github.com/rmsmech/HaleyRest</PackageProjectUrl>
+    <Version>1.0.1</Version>
+    <PackageProjectUrl>https://github.com/TheHaleyProject/HaleyRest</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rmsmech/HaleyRest</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <IncludeSymbols>true</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	  <PackageReleaseNotes>Implemented a wrapper for HttpClient. Added ClientStore for multiple client handling. Use BlockClient method for thread-safe calls.
-Fluent design pattern implemented for constructors</PackageReleaseNotes>
+	  <PackageReleaseNotes>Pilot release</PackageReleaseNotes>
   </PropertyGroup>
   
 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

@@ -19,6 +19,7 @@ using System.Collections.Concurrent;
 using Haley.Models;
 using Trs =System.Timers;
 using System.Web;
+using System.Text.Json.Serialization;
 
 namespace Haley.Utils
 {
@@ -31,6 +32,7 @@ namespace Haley.Utils
         public string Id { get; }
         public string BaseURI { get;}
         public string FriendlyName { get; }
+        public List<JsonConverter> JsonConverters { get; }
         #region Attributes
         Func<HttpRequestMessage, Task<bool>> RequestvalidationCallBack;
         HttpClientHandler handler = new HttpClientHandler();
@@ -51,6 +53,7 @@ namespace Haley.Utils
             Id = Guid.NewGuid().ToString();
             BaseURI = base_address;
             _base_uri = getBaseUri(base_address);
+            JsonConverters = new List<JsonConverter>();
             RequestvalidationCallBack = request_validationcallback;
             if (string.IsNullOrWhiteSpace(friendly_name)) friendly_name = base_address;
             FriendlyName = friendly_name;
@@ -72,6 +75,15 @@ namespace Haley.Utils
         #endregion
 
         #region FluentMethods
+
+        public IClient AddJsonConverters(JsonConverter converter)
+        {
+            if (!JsonConverters.Contains(converter))
+            {
+                JsonConverters.Add(converter);
+            }
+            return this;
+        }
 
         public IClient ResetClientHeaders()
         {
@@ -178,10 +190,15 @@ namespace Haley.Utils
             }
             return result;
         }
-        
+
         #endregion
 
         #region Post Methods
+        public async Task<IResponse> PostAsync(string resource_url, Dictionary<string, string> dictionary)
+        {
+            //When we directly post dictionary of string as parameters, we just try to seriazlie them to string.
+            return await PostAsync(resource_url, dictionary.ToJson(), true); //parameters are in Dictionary<string,string> format so it will be direclty serizlied without need for any converter.
+        }
         public async Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized = false) 
         {
             return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
@@ -458,7 +475,7 @@ namespace Haley.Utils
                         switch (param.StringBodyFormat)
                         {
                             case StringContentFormat.Json:
-                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToJson();
+                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToJson(JsonConverters);
                                 mediatype = "application/json";
                                 break;
                             case StringContentFormat.XML:
@@ -492,8 +509,9 @@ namespace Haley.Utils
                 }
                 return result;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Debug.WriteLine(ex.ToString());
                 return null;
             }
         }

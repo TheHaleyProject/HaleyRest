@@ -14,6 +14,7 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 using Haley.Models;
 
 namespace Haley.Abstractions
@@ -79,13 +80,17 @@ namespace Haley.Abstractions
         /// <returns></returns>
         IClient AddClientHeaderAuthentication(string token, string token_prefix = "Bearer");
         IClient AddRequestCancellationToken(CancellationToken cancellation_token);
+        IClient AddJsonConverters(JsonConverter converter);
         Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class;
         Task<StringResponse> GetAsync(string resource_url);
         Task<StringResponse> GetAsync(string resource_url, Dictionary<string, string> parameters);
+       
         Task<SerializedResponse<T>> GetAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class;
+        Task<IResponse> PostAsync(string resource_url, Dictionary<string, string> dictionary);
         Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized);
         Task<IResponse> PostAsync(string resource_url, RestParam param);
         Task<IResponse> PostAsync(string resource_url, IEnumerable<RestParam> param_list);
+       
         Task<IResponse> SendAsync(string url, object content, Method method = Method.Get, ParamType param_type = ParamType.Default, bool is_serialized = false);
         Task<IResponse> SendAsync(string url, RestParam param, Method method = Method.Get);
         Task<IResponse> SendAsync(string url, IEnumerable<RestParam> paramList, Method method = Method.Get);

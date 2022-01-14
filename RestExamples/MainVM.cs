@@ -129,6 +129,13 @@ namespace RestExamples
             set { SetProp(ref _selectedTab, value); }
         }
 
+        private bool _dictionaryAsMultiformData;
+        public bool DictionaryAsMultiformData
+        {
+            get { return _dictionaryAsMultiformData; }
+            set { SetProp(ref _dictionaryAsMultiformData, value); }
+        }
+
         public ICommand AddNewKvpCommand => new DelegateCommand(addNewKVP);
         public ICommand DeleteKVPCommand => new DelegateCommand<object>(deleteKVP);
         public ICommand SendRequestCommand => new DelegateCommand(sendRequest);
@@ -173,6 +180,8 @@ namespace RestExamples
                     break;
             }
 
+            if (response == null) return;
+
             RequestMessage = RequestMessage + response.OriginalResponse.RequestMessage.ToString();
             if (response.IsSuccess && response is StringResponse strrspns)
             {
@@ -198,14 +207,32 @@ namespace RestExamples
 
         async Task<IResponse> sendParameters()
         {
-            var _parmlist = new List<RestParam>();
-            foreach (var item in ParamsCollection)
+            IResponse response = null;
+            if (SelectedMethod == Method.Post)
             {
-                _parmlist.Add(new RestParam(item.Key, item.Value, true, SelectedParamType, SelectedBodyType));
+                Dictionary<string, string> _paramdic = new Dictionary<string, string>();
+                foreach (var item in ParamsCollection)
+                {
+                    if (string.IsNullOrWhiteSpace(item.Key)) continue;
+                    if (!_paramdic.ContainsKey(item.Key))
+                    {
+                        _paramdic.Add(item.Key, item.Value);
+                    }
+                }
+                
+                response = await _selectedClient.PostAsync(SelectedEndPoint, _paramdic);
             }
-            //validate all values.
-            var _response = await _selectedClient.SendAsync(SelectedEndPoint, _parmlist, SelectedMethod);
-            return _response;
+            else
+            {
+                var _parmlist = new List<RestParam>();
+                foreach (var item in ParamsCollection)
+                {
+                    _parmlist.Add(new RestParam(item.Key, item.Value, true, SelectedParamType, SelectedBodyType));
+                }
+                //validate all values.
+                response = await _selectedClient.SendAsync(SelectedEndPoint, _parmlist, SelectedMethod);
+            }
+            return response;
         }
 
         private async Task<string> parseContent(HttpContent content)
@@ -257,6 +284,7 @@ namespace RestExamples
             Clients = new ObservableCollection<IClient>();
             ParamsCollection = new ObservableCollection<ParameterSet>();
             SelectedTab = TabEnum.Parameters;
+            DictionaryAsMultiformData = true;
 
             //PREPARE CLIENTS
             //CLIENT 1
