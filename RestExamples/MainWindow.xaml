@@ -37,7 +37,18 @@
                     <TextBlock Text="{Binding ClientInfo,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}" Grid.Row="2" Background="#FFEAEAEA" Margin="3" Height="100" TextWrapping="Wrap"/>
                 </Grid>
                 <Grid Grid.Column="1" Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <hw:PlainListView ItemsSource="{Binding EndPoints,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}" SelectedItem="{Binding SelectedEndPoint,NotifyOnSourceUpdated=True, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <StackPanel Grid.Row="1">
+                        <TextBlock Text="TOKEN FOR REQUEST :" Foreground="#FF851616"/>
+                        <hw:LinkedText Text="Clear Token" Command="{Binding ClearTokensCommand}" HorizontalAlignment="Right"/>
+                        <hw:PlainTextBox Text="{Binding TokenPrefix,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}" WaterMark="Token Prefix : BEARER" Margin="3,4" Height="28"/>
+                        <hw:PlainTextBox Text="{Binding TokenValue,NotifyOnSourceUpdated=True, UpdateSourceTrigger=PropertyChanged}" WaterMark="Token Value" Margin="3,4" Height="28"/>
+                    </StackPanel>
                 </Grid>
             </Grid>
 
@@ -51,7 +62,7 @@
                     <ComboBox Width="100" ItemsSource="{Binding Source={x:Type he:RequestBodyType},Converter={StaticResource EnumTypeToDescriptionList}}" Margin="5,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedBodyType,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}"/>
                     <ComboBox Width="100" ItemsSource="{Binding Source={x:Type he:ParamType},Converter={StaticResource EnumTypeToDescriptionList}}" Margin="5,0" IsSynchronizedWithCurrentItem="True" SelectedItem="{Binding SelectedParamType,NotifyOnSourceUpdated=True, UpdateSourceTrigger=PropertyChanged}"/>
                 </StackPanel>
-                <hw:PlainButton Width="90" HorizontalAlignment="Right" Margin="3" CornerRadius="2" Background="#FF1A6AA2" Foreground="White" Content="SEND" Command="{Binding SendRequestCommand}"/>
+                <hw:PlainButton Width="100" HorizontalAlignment="Right" Margin="3" CornerRadius="2" Background="#FF1A6AA2" Foreground="White" Content="SEND REQUEST" Command="{Binding SendRequestCommand}"/>
                 <TabControl Grid.Row="1" Margin="3" BorderBrush="{x:Null}" Background="#FFDCDBD6">
                     <TabItem Height="25" Width="80" Header="Raw Text" IsSelected="{Binding SelectedTab, Converter={StaticResource EqualityCheck},ConverterParameter={x:Static local:TabEnum.RawText}}">
                         <TextBox Text="{Binding RawText,NotifyOnSourceUpdated=True,UpdateSourceTrigger=PropertyChanged}"/>

@@ -123,8 +123,8 @@ namespace Haley.Utils
             if (!string.IsNullOrWhiteSpace(_headerToken))
             {
                 //If it is null, then do not set anything. However, it would have already been cleared.
-                //BaseClient.DefaultRequestHeaders.Add("Authorization", _headerToken);
-                BaseClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(_headerToken);
+                BaseClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", _headerToken);
+                //BaseClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(_headerToken);
             }
             return this;
         }
@@ -243,7 +243,8 @@ namespace Haley.Utils
             //If the request has some kind of request headers, then add them.
             if (!string.IsNullOrWhiteSpace(request_token))
             {
-                request.Headers.Authorization = new AuthenticationHeaderValue(request_token);
+                //request.Headers.Authorization = new AuthenticationHeaderValue(request_token); //if the input is not correct, for instance, token has space, then it will throw exception. Add without validation.
+                request.Headers.TryAddWithoutValidation("Authorization", request_token);
             }
 
             //Add other request headers if available.
@@ -253,7 +254,7 @@ namespace Haley.Utils
                 {
                     try
                     {
-                        request.Headers.Add(kvp.Key, kvp.Value);
+                        request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value); //Do not validate.
                     }
                     catch (Exception ex)
                     {
@@ -410,6 +411,7 @@ namespace Haley.Utils
                 //For delete, post, put, we can have, data in both query string and also in request body.
                 //For get, the data should only be in the query string. So, remove all the params except the request body.
 
+                //CHANGE PARAMTYPE ONLY IF ITS NOT SET DIRECTLY. for instance, a POST can still have query and GET can still have Request body. This will be handled when trying to create the content.
                 //if paramtype is default, then we replace them with relevant types.
                 @params.Where(p=>p.ParamType == ParamType.Default)?.ToList().ForEach(q =>
                 {
@@ -548,7 +550,11 @@ namespace Haley.Utils
             //Assuming all the inputs are serialzied or direct values.
             foreach (var param in paramList.Where(p=>p.ParamType == ParamType.QueryString))
             {
-                _query[param.Key] = param.Value as string;
+                //We only process if the content is string.
+                if (param.Value is string strValue)
+                {
+                    _query[param.Key] = strValue; //Doesn't care if it is serialized or not. We just take the string.
+                }
             }
             var _formed_query = _query.ToString();
             if(!string.IsNullOrWhiteSpace(_formed_query))

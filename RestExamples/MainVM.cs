@@ -74,6 +74,20 @@ namespace RestExamples
             }
         }
 
+        private string _tokenPrefix;
+        public string TokenPrefix
+        {
+            get { return _tokenPrefix; }
+            set { SetProp(ref _tokenPrefix, value); }
+        }
+
+        private string _tokenvalue;
+        public string TokenValue
+        {
+            get { return _tokenvalue; }
+            set { SetProp(ref _tokenvalue, value); }
+        }
+
         private string _clientInfo;
         public string ClientInfo
         {
@@ -118,6 +132,12 @@ namespace RestExamples
         public ICommand AddNewKvpCommand => new DelegateCommand(addNewKVP);
         public ICommand DeleteKVPCommand => new DelegateCommand<object>(deleteKVP);
         public ICommand SendRequestCommand => new DelegateCommand(sendRequest);
+        public ICommand ClearTokensCommand => new DelegateCommand(clearToken);
+        void clearToken()
+        {
+            TokenPrefix = string.Empty;
+            TokenValue = string.Empty;
+        }
 
         public MainVM() 
         {
@@ -128,6 +148,17 @@ namespace RestExamples
             ResponseMessage = null;
             RequestMessage = null;
             IResponse response = null;
+
+            //if token value is not null, then add authentication to the request.
+            if (!string.IsNullOrWhiteSpace(TokenValue))
+            {
+                SelectedClient.AddRequestAuthentication(TokenValue, TokenPrefix);
+            }
+            else
+            {
+                SelectedClient.ClearRequestAuthentication().ClearRequestHeaders();
+            }
+
             switch (SelectedTab)
             {
                 case TabEnum.Parameters:
@@ -223,26 +254,23 @@ namespace RestExamples
         }
         private void _initiate()
         {
-            //Addclients
             Clients = new ObservableCollection<IClient>();
             ParamsCollection = new ObservableCollection<ParameterSet>();
             SelectedTab = TabEnum.Parameters;
 
+            //PREPARE CLIENTS
             //CLIENT 1
             var _client1 = ClientStore.AddClient(APIEnums.publicAPI, $@"https://api.publicapis.org", "PublicAPI");
             _endpointsDictionary.Add(_client1.Id, new List<string>()
             {
-              "entries","random"
+              "random","entries",
             });
-            Clients.Add(_client1);
-
             //CLIENT 2
             var _client2 = ClientStore.AddClient(APIEnums.goRest, $@"https://gorest.co.in/", "GoRest",gorestCallback);
             _endpointsDictionary.Add(_client2.Id, new List<string>()
             {
                 "public/v1/users","public/v1/posts","public/v1/comments","public/v1/todos"
             });
-            Clients.Add(_client2);
 
             //CLIENT 3
             var _client3 = ClientStore.AddClient(APIEnums.jsonPlaceHolder, $@"https://jsonplaceholder.typicode.com", "JsonPlaceHolder");
@@ -250,9 +278,10 @@ namespace RestExamples
             {
 
             });
+            //ADD CLIENTS
+            Clients.Add(_client2);
+            Clients.Add(_client1);
             Clients.Add(_client3);
-
-
             SelectedClient = Clients.FirstOrDefault();
         }
 

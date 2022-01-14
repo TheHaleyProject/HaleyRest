@@ -19,10 +19,19 @@ namespace Haley.Models
         //public string HeaderContentType { get; set; }
         //public string HeaderContentDisposition { get; set; }
         public StringContentFormat StringBodyFormat { get; set; }
+        /// <summary>
+        /// Rest Param Object
+        /// </summary>
+        /// <param name="key">Key to add.
+        /// </param>
+        /// <param name="value"></param>
+        /// <param name="is_serialized"></param>
+        /// <param name="type"></param>
+        /// <param name="body_type"></param>
         public RestParam(string key, object value, bool is_serialized = false, ParamType type = ParamType.QueryString,RequestBodyType body_type = RequestBodyType.StringContent)
         {
             Id = Guid.NewGuid().ToString();
-            Key = key;
+            Key = string.IsNullOrWhiteSpace(key)?"id":key;
             Value = value;
             ParamType = type;
             IsSerialized = is_serialized;
