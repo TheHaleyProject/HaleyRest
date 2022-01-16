@@ -14,6 +14,7 @@ using System.Text.Json;
 using Haley.Utils;
 using Haley.Abstractions;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 
 namespace Haley.Rest
 {
@@ -49,11 +50,11 @@ namespace Haley.Rest
                 return GetClient(key); //if key already exists.
             }
         }
-        public static IClient AddClient(Enum @enum, string base_uri, string friendly_name = null,Func<HttpRequestMessage,Task<bool>> requestvalidation = null)
-        { return AddClient(@enum.getKey(), base_uri,friendly_name,requestvalidation); }
+        public static IClient AddClient(Enum @enum, string base_uri, string friendly_name = null,Func<HttpRequestMessage,Task<bool>> requestvalidation = null,ILogger logger = null)
+        { return AddClient(@enum.getKey(), base_uri,friendly_name,requestvalidation, logger); }
 
-        public static IClient AddClient(string key, string base_uri, string friendly_name = null, Func<HttpRequestMessage, Task<bool>> requestvalidation = null)
-        {return AddClient(key, new MicroClient(base_uri,friendly_name, requestvalidation));}
+        public static IClient AddClient(string key, string base_uri, string friendly_name = null, Func<HttpRequestMessage, Task<bool>> requestvalidation = null, ILogger logger = null)
+        {return AddClient(key, new MicroClient(base_uri,friendly_name, requestvalidation,logger));}
 
         public static bool RemoveClient(string key)
         {

@@ -16,6 +16,7 @@ using System.Text.Json;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Haley.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Haley.Abstractions
 {
@@ -27,10 +28,16 @@ namespace Haley.Abstractions
         string Id { get; }
         string FriendlyName { get; }
         string BaseURI { get; }
+        ILogger Logger { get; }
         /// <summary>
         /// The Base HTTPClient
         /// </summary>
         HttpClient BaseClient { get; }
+        /// <summary>
+        /// Add a logger to the 
+        /// </summary>
+        /// <param name="logger"></param>
+        /// <returns></returns>
         /// <summary>
         /// Reset the client headers. (Base address will be retained).
         /// </summary>

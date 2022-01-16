@@ -20,6 +20,7 @@ using Haley.Models;
 using Trs =System.Timers;
 using System.Web;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
 
 namespace Haley.Utils
 {
@@ -32,7 +33,9 @@ namespace Haley.Utils
         public string Id { get; }
         public string BaseURI { get;}
         public string FriendlyName { get; }
-        public List<JsonConverter> JsonConverters { get; }
+        public ConcurrentDictionary<Type,JsonConverter> JsonConverters { get; }
+        public ILogger Logger { get; }
+
         #region Attributes
         Func<HttpRequestMessage, Task<bool>> RequestvalidationCallBack;
         HttpClientHandler handler = new HttpClientHandler();
@@ -48,12 +51,13 @@ namespace Haley.Utils
         #endregion
 
         #region Constructors
-        public MicroClient(string base_address,string friendly_name ,Func<HttpRequestMessage, Task<bool>> request_validationcallback)
+        public MicroClient(string base_address,string friendly_name ,Func<HttpRequestMessage, Task<bool>> request_validationcallback,ILogger logger)
         {
             Id = Guid.NewGuid().ToString();
             BaseURI = base_address;
             _base_uri = getBaseUri(base_address);
-            JsonConverters = new List<JsonConverter>();
+            Logger = logger;
+            JsonConverters = new ConcurrentDictionary<Type, JsonConverter>();
             RequestvalidationCallBack = request_validationcallback;
             if (string.IsNullOrWhiteSpace(friendly_name)) friendly_name = base_address;
             FriendlyName = friendly_name;
@@ -68,9 +72,9 @@ namespace Haley.Utils
         }
        
 
-        public MicroClient(Uri base_uri, string friendly_name = null) : this(base_uri.AbsoluteUri, friendly_name) { }
-        public MicroClient(string base_uri, string friendly_name = null) : this(base_uri, friendly_name,null) { }
-        public MicroClient(string base_uri) : this(base_uri, base_uri, null) { }
+        public MicroClient(Uri base_uri, string friendly_name = null, ILogger logger = null) : this(base_uri.AbsoluteUri, friendly_name,logger) { }
+        public MicroClient(string base_uri, string friendly_name = null,ILogger logger = null) : this(base_uri, friendly_name,null,logger) { }
+        public MicroClient(string base_uri, ILogger logger = null) : this(base_uri, base_uri, null,logger) { }
       
         #endregion
 
@@ -78,11 +82,40 @@ namespace Haley.Utils
 
         public IClient AddJsonConverters(JsonConverter converter)
         {
-            if (!JsonConverters.Contains(converter))
+            try
             {
-                JsonConverters.Add(converter);
+                if (converter == null) return this;
+
+                if (!JsonConverters.ContainsKey(converter.GetType()))
+                {
+                    JsonConverters.TryAdd(converter.GetType(), converter);
+                }
+                return this;
             }
-            return this;
+            catch (Exception ex)
+            {
+                EventId _eventid = new EventId(5001, "JSONConverter Add Error");
+                Logger?.Log(LogLevel.Trace, _eventid, "Error while trying to JSON Converter", ex, LogFormatter);
+                return this;
+            }
+        }
+
+        public IClient RemoveJsonConverters(JsonConverter converter)
+        {
+            try
+            {
+                if (converter == null) return this;
+                var _type = converter.GetType();
+                if (JsonConverters.ContainsKey(_type))
+                {
+                    JsonConverters.TryRemove(_type, out var removed);
+                }
+                return this;
+            }
+            catch (Exception)
+            {
+                return this;
+            }
         }
 
         public IClient ResetClientHeaders()
@@ -414,6 +447,11 @@ namespace Haley.Utils
         #endregion
 
         #region Helpers
+        private string  LogFormatter (string state,Exception exception)
+        {
+            if (exception == null) return state;
+            return (state + Environment.NewLine+ exception.Message.ToString() + Environment.NewLine + exception.StackTrace.ToString());
+        }
         private void SemaPhoreTimer_Elapsed(object sender, Trs.ElapsedEventArgs e)
         {
             WriteTimerDebugMessage("Timer Elapsed", "Elapsed call.");
@@ -475,7 +513,7 @@ namespace Haley.Utils
                         switch (param.StringBodyFormat)
                         {
                             case StringContentFormat.Json:
-                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToJson(JsonConverters);
+                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToJson(JsonConverters?.Values?.ToList());
                                 mediatype = "application/json";
                                 break;
                             case StringContentFormat.XML:
