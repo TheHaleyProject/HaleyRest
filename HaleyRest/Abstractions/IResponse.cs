@@ -8,7 +8,8 @@ namespace Haley.Abstractions
     public interface IResponse
     {
         HttpResponseMessage OriginalResponse { get; set; }
-        bool IsSuccess { get; }
+        bool IsSuccessStatusCode { get; }
         HttpContent Content { get; }
+        void CopyTo(IResponse input);
     }
 }

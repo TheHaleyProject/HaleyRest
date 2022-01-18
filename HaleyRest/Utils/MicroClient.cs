@@ -67,6 +67,7 @@ namespace Haley.Utils
                 return;
             }
             BaseClient = new HttpClient(handler,false); //Base client is read only. So initiate only once.
+            BaseClient.BaseAddress = _base_uri; //Address can be set only once. Calling multiple times will throw exception.
             ResetClientHeaders();
             semaphoreTimer.Elapsed += SemaPhoreTimer_Elapsed;
         }
@@ -99,7 +100,6 @@ namespace Haley.Utils
                 return this;
             }
         }
-
         public IClient RemoveJsonConverters(JsonConverter converter)
         {
             try
@@ -117,11 +117,10 @@ namespace Haley.Utils
                 return this;
             }
         }
-
         public IClient ResetClientHeaders()
         {
             //remains the same throught the life time of this client.
-            BaseClient.BaseAddress = _base_uri;
+            //BaseClient.BaseAddress = _base_uri; //Base address cannot be reset multiple times.
             BaseClient.DefaultRequestHeaders.Accept.Clear();
             BaseClient.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
@@ -200,20 +199,20 @@ namespace Haley.Utils
                 }
             }
 
-            SerializedResponse<T> result = new SerializedResponse<T>();
             var _response = await SendAsync(resource_url, paramslist, Method.Get);
-
-            if (_response.IsSuccess && _response is StringResponse _strRspns)
+            SerializedResponse<T> result = new SerializedResponse<T>();
+            _response.CopyTo(result);
+            if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.StringContent))
             {
                 try
                 {
                     if (typeof(T) == typeof(string))
                     {
-                        result.SerializedContent = _strRspns.StringContent as T;
+                        result.SerializedContent = result.StringContent as T;
                     }
                     else
                     {
-                        result.SerializedContent = JsonSerializer.Deserialize<T>(_strRspns.StringContent);
+                        result.SerializedContent = JsonSerializer.Deserialize<T>(result.StringContent);
                     }
                 }
                 catch (Exception)
@@ -227,12 +226,12 @@ namespace Haley.Utils
         #endregion
 
         #region Post Methods
-        public async Task<IResponse> PostAsync(string resource_url, Dictionary<string, string> dictionary)
+        public async Task<IResponse> PostDictionaryAsync(string resource_url, Dictionary<string, string> dictionary)
         {
             //When we directly post dictionary of string as parameters, we just try to seriazlie them to string.
-            return await PostAsync(resource_url, dictionary.ToJson(), true); //parameters are in Dictionary<string,string> format so it will be direclty serizlied without need for any converter.
+            return await PostObjectAsync(resource_url, dictionary.ToJson(), true); //parameters are in Dictionary<string,string> format so it will be direclty serizlied without need for any converter.
         }
-        public async Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized = false) 
+        public async Task<IResponse> PostObjectAsync(string resource_url, object content, bool is_serialized = false) 
         {
             return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
         }
@@ -315,9 +314,9 @@ namespace Haley.Utils
 
             StringResponse result = new StringResponse();
             var _response = await SendAsync(request);
-            result.OriginalResponse = _response.OriginalResponse; //Set the original response.
+            _response.CopyTo(result); //Copy base value.
             //Response we receive will be base response.
-            if (_response.IsSuccess)
+            if (_response.IsSuccessStatusCode)
             {
                 var _cntnt = _response.Content;
                 var _strCntnt = await _cntnt.ReadAsStringAsync();

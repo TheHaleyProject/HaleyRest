@@ -93,8 +93,8 @@ namespace Haley.Abstractions
         Task<StringResponse> GetAsync(string resource_url, Dictionary<string, string> parameters);
        
         Task<SerializedResponse<T>> GetAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class;
-        Task<IResponse> PostAsync(string resource_url, Dictionary<string, string> dictionary);
-        Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized);
+        Task<IResponse> PostDictionaryAsync(string resource_url, Dictionary<string, string> dictionary);
+        Task<IResponse> PostObjectAsync(string resource_url, object content, bool is_serialized);
         Task<IResponse> PostAsync(string resource_url, RestParam param);
         Task<IResponse> PostAsync(string resource_url, IEnumerable<RestParam> param_list);
        
