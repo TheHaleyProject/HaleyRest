@@ -34,10 +34,10 @@ namespace Haley.Rest
         }
         public static IClient GetClient(Enum @enum)
         
-        {return GetClient(@enum.getKey());}
+        {return GetClient(@enum.GetKey());}
 
         public static IClient AddClient(Enum @enum, IClient client)
-        { return AddClient(@enum.getKey(), client);}
+        { return AddClient(@enum.GetKey(), client);}
         public static IClient AddClient(string key, IClient client)
         {
             if (client == null) return null;
@@ -51,7 +51,7 @@ namespace Haley.Rest
             }
         }
         public static IClient AddClient(Enum @enum, string base_uri, string friendly_name = null,Func<HttpRequestMessage,Task<bool>> requestvalidation = null,ILogger logger = null)
-        { return AddClient(@enum.getKey(), base_uri,friendly_name,requestvalidation, logger); }
+        { return AddClient(@enum.GetKey(), base_uri,friendly_name,requestvalidation, logger); }
 
         public static IClient AddClient(string key, string base_uri, string friendly_name = null, Func<HttpRequestMessage, Task<bool>> requestvalidation = null, ILogger logger = null)
         {return AddClient(key, new MicroClient(base_uri,friendly_name, requestvalidation,logger));}
@@ -60,6 +60,6 @@ namespace Haley.Rest
         {
             return _clientDictionary.TryRemove(key, out var _removed);
         }
-        public static bool RemoveClient(Enum @enum){ return RemoveClient(@enum.getKey()); }
+        public static bool RemoveClient(Enum @enum){ return RemoveClient(@enum.GetKey()); }
     }
 }
