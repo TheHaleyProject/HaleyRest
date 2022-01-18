@@ -183,11 +183,39 @@ namespace Haley.Utils
         {
             return await GetAsync(resource_url,null);
         }
-        public async Task<StringResponse> GetAsync(string resource_url, Dictionary<string, string> parameters)
+
+        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url, string id_parameter) where T : class
         {
-            return await GetAsync<string>(resource_url, parameters);
+            if (!string.IsNullOrWhiteSpace(id_parameter))
+            {
+                Dictionary<string, string> _requestDic = new Dictionary<string, string>();
+                _requestDic.Add("id", id_parameter);
+                return await GetByDictionaryAsync<T>(resource_url, _requestDic);
+            }
+            else
+            {
+                return await GetAsync<T>(resource_url, null);
+            }
         }
-        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class
+        public async Task<StringResponse> GetAsync(string resource_url, string id_parameter)
+        {
+            if (!string.IsNullOrWhiteSpace(id_parameter))
+            {
+                Dictionary<string, string> _requestDic = new Dictionary<string, string>();
+                _requestDic.Add("id", id_parameter);
+                return await GetByDictionaryAsync(resource_url, _requestDic);
+            }
+            else
+            {
+                return await GetAsync(resource_url, null);
+            }
+        }
+
+        public async Task<StringResponse> GetByDictionaryAsync(string resource_url, Dictionary<string, string> parameters)
+        {
+            return await GetByDictionaryAsync<string>(resource_url, parameters);
+        }
+        public async Task<SerializedResponse<T>> GetByDictionaryAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class
         {
             List<RestParam> paramslist = new List<RestParam>();
             if (parameters != null && parameters?.Count > 0)

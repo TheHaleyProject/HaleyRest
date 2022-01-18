@@ -90,9 +90,11 @@ namespace Haley.Abstractions
         IClient AddJsonConverters(JsonConverter converter);
         Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class;
         Task<StringResponse> GetAsync(string resource_url);
-        Task<StringResponse> GetAsync(string resource_url, Dictionary<string, string> parameters);
+        Task<SerializedResponse<T>> GetAsync<T>(string resource_url,string id_parameter) where T : class;
+        Task<StringResponse> GetAsync(string resource_url,string id_parameter);
+        Task<StringResponse> GetByDictionaryAsync(string resource_url, Dictionary<string, string> parameters);
        
-        Task<SerializedResponse<T>> GetAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class;
+        Task<SerializedResponse<T>> GetByDictionaryAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class;
         Task<IResponse> PostDictionaryAsync(string resource_url, Dictionary<string, string> dictionary);
         Task<IResponse> PostObjectAsync(string resource_url, object content, bool is_serialized);
         Task<IResponse> PostAsync(string resource_url, RestParam param);
