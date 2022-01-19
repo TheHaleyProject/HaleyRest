@@ -183,7 +183,7 @@ namespace RestExamples
             if (response == null) return;
 
             RequestMessage = RequestMessage + response.OriginalResponse.RequestMessage.ToString();
-            if (response.IsSuccess && response is StringResponse strrspns)
+            if (response.IsSuccessStatusCode && response is StringResponse strrspns)
             {
                 ResponseMessage = strrspns.StringContent;
             }
@@ -220,7 +220,7 @@ namespace RestExamples
                     }
                 }
                 
-                response = await _selectedClient.PostAsync(SelectedEndPoint, _paramdic);
+                response = await _selectedClient.PostDictionaryAsync(SelectedEndPoint, _paramdic);
             }
             else
             {
