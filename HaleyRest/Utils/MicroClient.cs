@@ -229,7 +229,8 @@ namespace Haley.Utils
 
             var _response = await SendAsync(resource_url, paramslist, Method.Get);
             SerializedResponse<T> result = new SerializedResponse<T>();
-            _response.CopyTo(result);
+            //_response.CopyTo(result);
+            _response.MapProperties(result);
             if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.StringContent))
             {
                 try

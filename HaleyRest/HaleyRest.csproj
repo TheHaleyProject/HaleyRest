@@ -16,13 +16,13 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Product>Haley Helpers</Product>
     <PackageId>Haley.Rest</PackageId>
-    <Version>1.0.4</Version>
+    <Version>1.0.6</Version>
     <PackageProjectUrl>https://github.com/TheHaleyProject/HaleyRest</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rmsmech/HaleyRest</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <IncludeSymbols>true</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	  <PackageReleaseNotes>Minor fix</PackageReleaseNotes>
+	  <PackageReleaseNotes>Minor fix. Updated Haley references</PackageReleaseNotes>
   </PropertyGroup>
   
 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -48,7 +48,7 @@
   </ItemGroup>
 
 <Import Project="$(SolutionDir)ProjectReferences_$(SolutionName).txt" Condition="Exists('$(SolutionDir)ProjectReferences_$(SolutionName).txt')" />
-<Choose>
+	<Choose>
     <When Condition="Exists($(HaleyExtensions))">
       <ItemGroup>
         <ProjectReference Include="$(HaleyExtensions)\HaleyExtensions.csproj">
