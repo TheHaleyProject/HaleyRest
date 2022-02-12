@@ -16,7 +16,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Product>Haley Helpers</Product>
     <PackageId>Haley.Rest</PackageId>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <PackageProjectUrl>https://github.com/TheHaleyProject/HaleyRest</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rmsmech/HaleyRest</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -58,7 +58,7 @@
     </When>
     <Otherwise>
      <ItemGroup>
-       <PackageReference Include="Haley.Extensions" Version="2.1.0" />
+       <PackageReference Include="Haley.Extensions" Version="2.1.5" />
 	 </ItemGroup>
     </Otherwise>
 </Choose>  
