@@ -16,7 +16,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Product>Haley Helpers</Product>
     <PackageId>Haley.Rest</PackageId>
-    <Version>1.0.8</Version>
+    <Version>1.0.9</Version>
     <PackageProjectUrl>https://github.com/TheHaleyProject/HaleyRest</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rmsmech/HaleyRest</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -36,8 +36,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
-    <PackageReference Include="System.Text.Json" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
+    <PackageReference Include="System.Text.Json" Version="6.0.5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -58,7 +58,7 @@
     </When>
     <Otherwise>
      <ItemGroup>
-       <PackageReference Include="Haley.Extensions" Version="2.1.11" />
+       <PackageReference Include="Haley.Extensions" Version="2.1.12" />
 	 </ItemGroup>
     </Otherwise>
 </Choose>  
