@@ -1,5 +1,6 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <HaleyRest>$(SolutionDir)HaleyRest</HaleyRest>
+    <HaleyHelpers>$(SolutionDir)..\HaleyHelpers\HaleyHelpers</HaleyHelpers>  
   </PropertyGroup>
 </Project>

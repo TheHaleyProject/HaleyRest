@@ -262,6 +262,7 @@ namespace Haley.Utils
         }
         public async Task<IResponse> PostObjectAsync(string resource_url, object content, bool is_serialized = false) 
         {
+            //return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
             return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
         }
         public async Task<IResponse> PostAsync(string resource_url, RestParam param)
@@ -520,8 +521,7 @@ namespace Haley.Utils
         {
             try
             {
-                var _token = token_prefix ?? "";
-                _token = _token + " " + token;
+                var _token = string.Concat(token_prefix ?? "", " ", token);
                 return _token?.Trim();
             }
             catch (Exception)

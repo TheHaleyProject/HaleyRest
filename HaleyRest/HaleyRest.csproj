@@ -61,5 +61,19 @@
        <PackageReference Include="Haley.Extensions" Version="2.1.12" />
 	 </ItemGroup>
     </Otherwise>
-</Choose>  
+</Choose>
+  <Choose>
+    <When Condition="Exists($(HaleyHelpers))">
+      <ItemGroup>
+        <ProjectReference Include="$(HaleyHelpers)\HaleyHelpers.csproj">
+          <Name>HaleyHelpers</Name>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+    <Otherwise>
+      <ItemGroup>
+        <PackageReference Include="Haley.Helpers" Version="2.1.7.6-beta1" />
+      </ItemGroup>
+    </Otherwise>
+  </Choose>
 </Project>
