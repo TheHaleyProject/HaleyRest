@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Haley.Enums
 {
-    public enum RequestBodyType
+    public enum BodyContentType
     {
         StringContent,
         ByteArrayContent,

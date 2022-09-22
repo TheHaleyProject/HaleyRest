@@ -30,6 +30,7 @@ namespace Haley.Utils
     public sealed class MicroClient :IClient
     {
         public HttpClient BaseClient { get; }
+        public bool AutoFixWrongParams { get; private set; }
         public string Id { get; }
         public string BaseURI { get;}
         public string FriendlyName { get; }
@@ -56,6 +57,7 @@ namespace Haley.Utils
             Id = Guid.NewGuid().ToString();
             BaseURI = base_address;
             _base_uri = getBaseUri(base_address);
+            AutoFixWrongParams = false;
             Logger = logger;
             JsonConverters = new ConcurrentDictionary<Type, JsonConverter>();
             RequestvalidationCallBack = request_validationcallback;
@@ -80,6 +82,11 @@ namespace Haley.Utils
         #endregion
 
         #region FluentMethods
+
+        public IClient SetAutoFixWrongParams(bool auto_fix) {
+            AutoFixWrongParams = auto_fix;
+            return this;
+        }
 
         public IClient AddJsonConverters(JsonConverter converter)
         {
@@ -217,7 +224,7 @@ namespace Haley.Utils
         }
         public async Task<SerializedResponse<T>> GetByDictionaryAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class
         {
-            List<RestParam> paramslist = new List<RestParam>();
+            List<RequestArgsBase> paramslist = new List<RequestArgsBase>();
             if (parameters != null && parameters?.Count > 0)
             {
                 foreach (var kvp in parameters)
@@ -265,11 +272,11 @@ namespace Haley.Utils
             //return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
             return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
         }
-        public async Task<IResponse> PostAsync(string resource_url, RestParam param)
+        public async Task<IResponse> PostAsync(string resource_url, RequestArgsBase param)
         {
-            return await PostAsync(resource_url, new List<RestParam>() { param });
+            return await PostAsync(resource_url, new List<RequestArgsBase>() { param });
         }
-        public async Task<IResponse> PostAsync(string resource_url, IEnumerable<RestParam> param_list)
+        public async Task<IResponse> PostAsync(string resource_url, IEnumerable<RequestArgsBase> param_list)
         {
             return await SendAsync(resource_url, paramList: param_list, Method.Post);
         }
@@ -280,15 +287,15 @@ namespace Haley.Utils
         {
             return await SendAsync(url, new RestParam("id", content, is_serialized, param_type), method);
         }
-        public async Task<IResponse> SendAsync(string url, RestParam param, Method method = Method.Get)
+        public async Task<IResponse> SendAsync(string url, RequestArgsBase param, Method method = Method.Get)
         {
             //Just add this single param as a list to the send method.
-            return await SendAsync(url, new List<RestParam>() { param }, method);
+            return await SendAsync(url, new List<RequestArgsBase>() { param }, method);
         }
         #endregion
 
         #region Main calls
-        public async Task<IResponse> SendAsync(string url, IEnumerable<RestParam> paramList, Method method = Method.Get)
+        public async Task<IResponse> SendAsync(string url, IEnumerable<RequestArgsBase> paramList, Method method = Method.Get)
         {
             string inputURL = url;
             processParamTypes(ref paramList, method);
@@ -486,7 +493,7 @@ namespace Haley.Utils
             WriteTimerDebugMessage("Timer Elapsed", "Elapsed call.");
             UnBlockClient("Elapsed Call");
         }
-        private void processParamTypes(ref IEnumerable<RestParam> @params,Method method)
+        private void processParamTypes(ref IEnumerable<RequestArgsBase> @params,Method method)
         {
             try
             {
@@ -529,14 +536,14 @@ namespace Haley.Utils
                 return null;
             }
         }
-        private HttpContent _createContent(RestParam param)
+        private HttpContent _createContent(RequestArgsBase param)
         {
             try
             {
                 HttpContent result = null;
                 switch (param.BodyType)
                 {
-                    case RequestBodyType.StringContent:
+                    case BodyContentType.StringContent:
                         string _serialized_content = null, mediatype = null;
                         switch (param.StringBodyFormat)
                         {
@@ -551,8 +558,8 @@ namespace Haley.Utils
                         }
                         result = new StringContent(_serialized_content, Encoding.UTF8, mediatype);
                         break;
-                    case RequestBodyType.ByteArrayContent:
-                    case RequestBodyType.StreamContent:
+                    case BodyContentType.ByteArrayContent:
+                    case BodyContentType.StreamContent:
                         if (param.Value is byte[] byteContent)
                         {
                             //If byte content.
@@ -568,7 +575,7 @@ namespace Haley.Utils
                         }
                         else
                         {
-                            param.BodyType = RequestBodyType.StringContent;
+                            param.BodyType = BodyContentType.StringContent;
                             return _createContent(param); //If the input is not byte array, then change it to string content and process again.
                         }
                         break;
@@ -581,7 +588,7 @@ namespace Haley.Utils
                 return null;
             }
         }
-        private HttpContent _createContent(IEnumerable<RestParam> paramList, Method method)
+        private HttpContent _createContent(IEnumerable<RequestArgsBase> paramList, Method method)
         {
             //If body count is more than one, add as mulit form data. Else add as a single content of the specific body type.
             try
@@ -626,7 +633,7 @@ namespace Haley.Utils
             }
         }
 
-        private string _createQuery(string url, IEnumerable<RestParam> paramList)
+        private string _createQuery(string url, IEnumerable<RequestArgsBase> paramList)
         {
             string result = url;
             var _query = HttpUtility.ParseQueryString(string.Empty);
@@ -648,7 +655,7 @@ namespace Haley.Utils
             return result;
         }
 
-        private (HttpContent content,string url) processInputs(string url, IEnumerable<RestParam> paramList, Method method)
+        private (HttpContent content,string url) processInputs(string url, IEnumerable<RequestArgsBase> paramList, Method method)
         {
             try
             {
