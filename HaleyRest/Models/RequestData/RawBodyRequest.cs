@@ -8,8 +8,7 @@ using Haley.Enums;
 
 namespace Haley.Models
 {
-    public class RawBodyRequest : RequestObject, ISerializeRequest
-    {
+    public class RawBodyRequest : RequestObject, ISerializeRequest, IRequestBody {
         public bool ShouldSerialize { get; set; }
         public bool IsSerialized { get; private set; } //Should be set only once to avoid re-serializing again.
         public void SetSerialized() {

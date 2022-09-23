@@ -29,7 +29,6 @@ namespace Haley.Abstractions
         string Id { get; }
         string FriendlyName { get; }
         string BaseURI { get; }
-        ILogger Logger { get; }
         /// <summary>
         /// The Base HTTPClient
         /// </summary>
@@ -89,6 +88,8 @@ namespace Haley.Abstractions
         IClient AddClientHeaderAuthentication(string token, string token_prefix = "Bearer");
         IClient AddRequestCancellationToken(CancellationToken cancellation_token);
         IClient AddJsonConverters(JsonConverter converter);
+
+        IClient SetLogger(ILogger logger);
 
         //Get is only through query parameter.
         Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class;

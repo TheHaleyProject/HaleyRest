@@ -7,7 +7,7 @@ using Haley.Enums;
 
 namespace Haley.Models
 {
-    public class RequestObject
+    public abstract class RequestObject
     {
         public string Id { get;}
         public object Value { get; set; }

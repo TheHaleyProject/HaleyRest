@@ -8,7 +8,7 @@ using Haley.Abstractions;
 
 namespace Haley.Models
 {
-    public class RequestParam : RequestObject, IEncodeRequest
+    public class RequestParam : RequestObject, IEncodeRequest , IRequestQuery
     {
         public string Key { get; set; }
         public bool ShouldEncode { get; set; }

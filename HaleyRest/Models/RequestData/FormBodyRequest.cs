@@ -8,8 +8,7 @@ using Haley.Abstractions;
 
 namespace Haley.Models
 {
-    public class FormBodyRequest : RequestObject
-    {
+    public class FormBodyRequest : RequestObject,IRequestBody {
         public IEnumerable<RequestParam> Parameters { get; set; }
         public void SetAllEncoded() {
           if(Parameters != null) {

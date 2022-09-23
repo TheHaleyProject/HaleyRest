@@ -33,14 +33,13 @@ namespace Haley.Utils
     public sealed class MicroClient :IClient
     {
         public HttpClient BaseClient { get; }
-        public bool AutoFixWrongParams { get; private set; }
         public string Id { get; }
         public string BaseURI { get;}
         public string FriendlyName { get; }
         public ConcurrentDictionary<Type,JsonConverter> JsonConverters { get; }
-        public ILogger Logger { get; }
 
         #region Attributes
+        ILogger _logger;
         Func<HttpRequestMessage, Task<bool>> RequestvalidationCallBack;
         HttpClientHandler handler = new HttpClientHandler();
         static string boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
@@ -60,15 +59,14 @@ namespace Haley.Utils
             Id = Guid.NewGuid().ToString();
             BaseURI = base_address;
             _base_uri = getBaseUri(base_address);
-            AutoFixWrongParams = false;
-            Logger = logger;
+            _logger = logger;
             JsonConverters = new ConcurrentDictionary<Type, JsonConverter>();
             RequestvalidationCallBack = request_validationcallback;
             if (string.IsNullOrWhiteSpace(friendly_name)) friendly_name = base_address;
             FriendlyName = friendly_name;
             if (_base_uri == null)
             {
-                Debug.WriteLine($@"ERROR: Base URI is null. MicroClient cannot be created.");
+                logger?.LogDebug($@"ERROR: Base URI is null. MicroClient cannot be created.");
                 return;
             }
             BaseClient = new HttpClient(handler,false); //Base client is read only. So initiate only once.
@@ -81,13 +79,12 @@ namespace Haley.Utils
         public MicroClient(Uri base_uri, string friendly_name = null, ILogger logger = null) : this(base_uri.AbsoluteUri, friendly_name,logger) { }
         public MicroClient(string base_uri, string friendly_name = null,ILogger logger = null) : this(base_uri, friendly_name,null,logger) { }
         public MicroClient(string base_uri, ILogger logger = null) : this(base_uri, base_uri, null,logger) { }
-      
+
         #endregion
 
         #region FluentMethods
-
-        public IClient SetAutoFixWrongParams(bool auto_fix) {
-            AutoFixWrongParams = auto_fix;
+        public IClient SetLogger(ILogger logger) {
+            _logger = logger;
             return this;
         }
 
@@ -106,7 +103,7 @@ namespace Haley.Utils
             catch (Exception ex)
             {
                 EventId _eventid = new EventId(5001, "JSONConverter Add Error");
-                Logger?.Log(LogLevel.Trace, _eventid, "Error while trying to JSON Converter", ex, LogFormatter);
+                _logger?.Log(LogLevel.Trace, _eventid, "Error while trying to JSON Converter", ex, LogFormatter);
                 return this;
             }
         }
@@ -129,6 +126,7 @@ namespace Haley.Utils
         }
         public IClient ResetClientHeaders()
         {
+            _logger.Log(LogLevel.Debug, "Resetting the client headers");
             //remains the same throught the life time of this client.
             //BaseClient.BaseAddress = _base_uri; //Base address cannot be reset multiple times.
             BaseClient.DefaultRequestHeaders.Accept.Clear();
@@ -141,6 +139,7 @@ namespace Haley.Utils
         public IClient ClearRequestHeaders()
         {
             _requestHeaders = new ConcurrentDictionary<string, IEnumerable<string>>(); //Clear the requestheaders.
+            _logger.Log(LogLevel.Debug, "Client request headers cleared");
             return this;
         }
         public IClient AddRequestHeaders(string name, string value)
@@ -264,6 +263,8 @@ namespace Haley.Utils
             return await SendAsync(processedInputs.url, processedInputs.content, method);
         }
         public async Task<IResponse> SendAsync(string url, HttpContent content, Method method) {
+
+            _logger.LogInformation($@"Initiating a {method} request to {url} with base url {BaseURI}");
             //1. Here, we do not add anything to the URL or Content.
             //2. We just validate the URl and get the path and query part.
             //3. Add request headers and Authentication (if available).
@@ -299,7 +300,7 @@ namespace Haley.Utils
                     try {
                         request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value); //Do not validate.
                     } catch (Exception ex) {
-                        Debug.WriteLine(ex.ToString());
+                        _logger?.Log(LogLevel.Debug, new EventId(2001,"Header Error"), "Error while trying to add a header", ex, LogFormatter);
                     }
                 }
             }
@@ -321,12 +322,12 @@ namespace Haley.Utils
             if (RequestvalidationCallBack != null) {
                 var validation_check = await RequestvalidationCallBack.Invoke(request);
                 if (!validation_check) {
+                    _logger.LogInformation("Local request validation failed. Please verify the validation methods to return true on successful validation");
                     return new StringResponse() { StringContent = "Internal Request Validation call back failed." };
                 }
             }
 
             //Here we donot modify anything. We just send and receive the response.
-
             HttpResponseMessage message;
             if (add_cancellation_token) {
                 message = await BaseClient.SendAsync(request, cancellation_token);
@@ -442,8 +443,8 @@ namespace Haley.Utils
 
                 //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
                 //A get request can have a content body.
-                processed_content = createContent(paramList, method);
-                processed_url = createQuery(url, paramList);
+                processed_content = prepareBody(paramList, method);
+                processed_url = prepareQuery(url, paramList);
                 return (processed_content, processed_url);
             } catch (Exception ex) {
                 throw ex;
@@ -471,43 +472,54 @@ namespace Haley.Utils
                 return null;
             }
         }
-        private HttpContent createContent(IEnumerable<RequestObject> paramList, Method method)
+        private HttpContent prepareBody(IEnumerable<RequestObject> paramList, Method method)
         {
-            //IDEA : If body count is more than one, add as mulit form data. Else add as a single content of the specific body type.
+            //We can add only one type of body to an object. If we have more than one type, we log the error and take only the first item.
             try
             {
                 HttpContent result = null;
-                //if (method == Method.GET) return result; //Though not recommended, get can still have a body.
+                //paramList.Where(p=> typeof(IRequestBody).IsAssignableFrom(p))?.f
+                var _requestBody = paramList.Where(p => p is IRequestBody)?.FirstOrDefault();
 
-                var _requestbodies = paramList.Where(p => p.ParamType == ParamType.RequestBody);
+                if(_requestBody is RawBodyRequest rawReq) {
+                    //Just add a raw content and send.
 
-                if (_requestbodies == null || _requestbodies?.Count() == 0) return result;
+                } else if (_requestBody is FormBodyRequest formreq) {
+                    //Decide if this is multipart form or urlencoded form data
 
-                if (_requestbodies.Count() == 1)
-                {
-                    //If one item add as a direct body.
-                    var target = _requestbodies.FirstOrDefault();
-                    result = _createContent(target);
                 }
-                else
-                {
-                    //For more than one add as form data.
-                    MultipartFormDataContent form_content = new MultipartFormDataContent();
-                    form_content.Headers.Remove("Content-Type");
-                    form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary);
-                    foreach (var item in _requestbodies)
-                    {
-                        if (string.IsNullOrWhiteSpace(item.FileName))
-                        {
-                            form_content.Add(_createContent(item), item.Key); //Also add the key.
-                        }
-                        else
-                        {
-                            form_content.Add(_createContent(item), item.Key, item.FileName); //File name cannot be empty. Sending empty variable throws exception/
-                        }
-                    }
-                    result = form_content;
-                }
+
+                //Currently we support only two items.
+
+                //var _requestbodies = paramList.Where(p => p.ParamType == ParamType.RequestBody);
+
+                //if (_requestbodies == null || _requestbodies?.Count() == 0) return result;
+
+                //if (_requestbodies.Count() == 1)
+                //{
+                //    //If one item add as a direct body.
+                //    var target = _requestbodies.FirstOrDefault();
+                //    result = _createContent(target);
+                //}
+                //else
+                //{
+                //    //For more than one add as form data.
+                //    //MultipartFormDataContent form_content = new MultipartFormDataContent();
+                //    //form_content.Headers.Remove("Content-Type");
+                //    //form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary);
+                //    foreach (var item in _requestbodies)
+                //    {
+                //        if (string.IsNullOrWhiteSpace(item.FileName))
+                //        {
+                //            form_content.Add(_createContent(item), item.Key); //Also add the key.
+                //        }
+                //        else
+                //        {
+                //            form_content.Add(_createContent(item), item.Key, item.FileName); //File name cannot be empty. Sending empty variable throws exception/
+                //        }
+                //    }
+                //    result = form_content;
+                //}
 
                 return result;
             }
@@ -516,7 +528,7 @@ namespace Haley.Utils
                 return null;
             }
         }
-        private string createQuery(string url, IEnumerable<RequestObject> paramList)
+        private string prepareQuery(string url, IEnumerable<RequestObject> paramList)
         {
             string result = url;
             var _query = HttpUtility.ParseQueryString(string.Empty);
@@ -537,7 +549,7 @@ namespace Haley.Utils
             }
             return result;
         }
-        private HttpContent createContent(RequestObject param) {
+        private HttpContent prepareBody(RequestObject param) {
             try {
                 HttpContent result = null;
                 switch (param.BodyType) {
@@ -568,7 +580,7 @@ namespace Haley.Utils
                             result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = param.FileName ?? "attachment" };
                         } else {
                             param.BodyType = BodyContentType.StringContent;
-                            return createContent(param); //If the input is not byte array, then change it to string content and process again.
+                            return prepareBody(param); //If the input is not byte array, then change it to string content and process again.
                         }
                         break;
                 }
