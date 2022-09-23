@@ -161,7 +161,7 @@ namespace Haley.Utils
         /// <returns></returns>
         public IClient AddRequestAuthentication(string token, string token_prefix = "Bearer")
         {
-            request_token = prepareToken(token, token_prefix);
+            request_token = PrepareToken(token, token_prefix);
             return this;
         }
         public IClient ClearRequestAuthentication()
@@ -172,7 +172,7 @@ namespace Haley.Utils
         public IClient AddClientHeaderAuthentication(string token, string token_prefix = "Bearer")
         {
             ResetClientHeaders(); //Re initiate the client (clearing old headers)
-            var _headerToken = prepareToken(token, token_prefix);
+            var _headerToken = PrepareToken(token, token_prefix);
             if (!string.IsNullOrWhiteSpace(_headerToken))
             {
                 //If it is null, then do not set anything. However, it would have already been cleared.
@@ -187,12 +187,12 @@ namespace Haley.Utils
         public async Task<StringResponse> GetAsync(string resource_url) {
             return await GetAsync(resource_url, null);
         }
-        public async Task<StringResponse> GetAsync(string resource_url, RequestParam parameter) {
-            List<RequestParam> queries = new List<RequestParam>();
+        public async Task<StringResponse> GetAsync(string resource_url, QueryParam parameter) {
+            List<QueryParam> queries = new List<QueryParam>();
             queries.Add(parameter);
             return await GetByParamsAsync(resource_url, queries);
         }
-        public async Task<StringResponse> GetByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters) {
+        public async Task<StringResponse> GetByParamsAsync(string resource_url, IEnumerable<QueryParam> parameters) {
             return await GetByParamsAsync<string>(resource_url, parameters);
         }
 
@@ -202,13 +202,13 @@ namespace Haley.Utils
         public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class {
             return await GetAsync<T>(resource_url, null);
         }
-        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url, RequestParam parameter) where T : class {
-            List<RequestParam> queries = new List<RequestParam>();
+        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url, QueryParam parameter) where T : class {
+            List<QueryParam> queries = new List<QueryParam>();
             queries.Add(parameter);
             return await GetByParamsAsync<T>(resource_url, queries);
         }
-        public async Task<SerializedResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<RequestParam> parameters) where T : class {
-            var _response = await SendAsync(resource_url, parameters, Method.GET);
+        public async Task<SerializedResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<QueryParam> parameters) where T : class {
+            var _response = await SendObjectsAsync(resource_url, parameters, Method.GET);
             SerializedResponse<T> result = new SerializedResponse<T>();
             //_response.CopyTo(result);
             _response.MapProperties(result);
@@ -228,36 +228,36 @@ namespace Haley.Utils
         #endregion
 
         #region Post Methods
-        public async Task<IResponse> PostAsync(string resource_url, RequestObject parameter)
+        public async Task<IResponse> PostObjectAsync(string resource_url, RequestObject parameter)
         {
-            return await PostAsync(resource_url, new List<RequestObject>() { parameter });
+            return await PostObjectsAsync(resource_url, new List<RequestObject>() { parameter });
         }
-        public async Task<IResponse> PostAsync(string resource_url, IEnumerable<RequestObject> parameters)
+        public async Task<IResponse> PostObjectsAsync(string resource_url, IEnumerable<RequestObject> parameters)
         {
-            return await SendAsync(resource_url, parameters, Method.POST);
+            return await SendObjectsAsync(resource_url, parameters, Method.POST);
         }
         #endregion
 
         #region Delete Methods
-        public async Task<IResponse> DeleteAsync(string resource_url, RequestParam param) {
-            return await DeleteAsync(resource_url, new List<RequestParam>() { param });
+        public async Task<IResponse> DeleteObjectAsync(string resource_url, QueryParam param) {
+            return await DeleteObjectsAsync(resource_url, new List<QueryParam>() { param });
         }
-        public async Task<IResponse> DeleteAsync(string resource_url, IEnumerable<RequestParam> parameters) {
-            return await SendAsync(resource_url, parameters, Method.DELETE);
+        public async Task<IResponse> DeleteObjectsAsync(string resource_url, IEnumerable<QueryParam> parameters) {
+            return await SendObjectsAsync(resource_url, parameters, Method.DELETE);
         }
         #endregion
 
         #region Send Methods
-        public async Task<IResponse> SendAsync(string url, object content, Method method, bool should_serialize, BodyContentType content_type = BodyContentType.StringContent)
+        public async Task<IResponse> SendAsync(string url, object content, Method method, bool is_serialized, BodyContentType content_type = BodyContentType.StringContent)
         {
-            return await SendAsync(url, new RawBodyRequest(content, should_serialize, content_type),method);
+            return await SendObjectAsync(url, new RawBodyRequest(content, is_serialized, content_type),method);
         }
-        public async Task<IResponse> SendAsync(string url, RequestObject param, Method method)
+        public async Task<IResponse> SendObjectAsync(string url, RequestObject param, Method method)
         {
             //Just add this single param as a list to the send method.
-            return await SendAsync(url, new List<RequestObject>() { param }, method);
+            return await SendObjectsAsync(url, new List<RequestObject>() { param }, method);
         }
-        public async Task<IResponse> SendAsync(string url, IEnumerable<RequestObject> paramList, Method method) {
+        public async Task<IResponse> SendObjectsAsync(string url, IEnumerable<RequestObject> paramList, Method method) {
             string inputURL = url;
             var processedInputs = ConverToHttpContent(inputURL, paramList, method); //Put required url queries, bodies etc.
             return await SendAsync(processedInputs.url, processedInputs.content, method);
@@ -443,8 +443,10 @@ namespace Haley.Utils
 
                 //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
                 //A get request can have a content body.
-                processed_content = prepareBody(paramList, method);
-                processed_url = prepareQuery(url, paramList);
+
+                //The paramlist might containt multiple request param(which will be trasformed in to query). however, only one (the first) request body will be considered
+                processed_content = PrepareBody(paramList, method);
+                processed_url = PrepareQuery(url, paramList);
                 return (processed_content, processed_url);
             } catch (Exception ex) {
                 throw ex;
@@ -460,7 +462,7 @@ namespace Haley.Utils
             WriteTimerDebugMessage("Timer Elapsed", "Elapsed call.");
             UnBlockClient("Elapsed Call");
         }
-        private string prepareToken(string token, string token_prefix)
+        private string PrepareToken(string token, string token_prefix)
         {
             try
             {
@@ -472,7 +474,7 @@ namespace Haley.Utils
                 return null;
             }
         }
-        private HttpContent prepareBody(IEnumerable<RequestObject> paramList, Method method)
+        private HttpContent PrepareBody(IEnumerable<RequestObject> paramList, Method method)
         {
             //We can add only one type of body to an object. If we have more than one type, we log the error and take only the first item.
             try
@@ -480,68 +482,48 @@ namespace Haley.Utils
                 HttpContent result = null;
                 //paramList.Where(p=> typeof(IRequestBody).IsAssignableFrom(p))?.f
                 var _requestBody = paramList.Where(p => p is IRequestBody)?.FirstOrDefault();
+                if (_requestBody == null || _requestBody.Value == null) return result; //Not need of further processing for null values.
 
                 if(_requestBody is RawBodyRequest rawReq) {
                     //Just add a raw content and send.
+                    result = prepareRawBody(rawReq);
 
                 } else if (_requestBody is FormBodyRequest formreq) {
                     //Decide if this is multipart form or urlencoded form data
-
+                    result = prepareFormBody(formreq);
                 }
-
-                //Currently we support only two items.
-
-                //var _requestbodies = paramList.Where(p => p.ParamType == ParamType.RequestBody);
-
-                //if (_requestbodies == null || _requestbodies?.Count() == 0) return result;
-
-                //if (_requestbodies.Count() == 1)
-                //{
-                //    //If one item add as a direct body.
-                //    var target = _requestbodies.FirstOrDefault();
-                //    result = _createContent(target);
-                //}
-                //else
-                //{
-                //    //For more than one add as form data.
-                //    //MultipartFormDataContent form_content = new MultipartFormDataContent();
-                //    //form_content.Headers.Remove("Content-Type");
-                //    //form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary);
-                //    foreach (var item in _requestbodies)
-                //    {
-                //        if (string.IsNullOrWhiteSpace(item.FileName))
-                //        {
-                //            form_content.Add(_createContent(item), item.Key); //Also add the key.
-                //        }
-                //        else
-                //        {
-                //            form_content.Add(_createContent(item), item.Key, item.FileName); //File name cannot be empty. Sending empty variable throws exception/
-                //        }
-                //    }
-                //    result = form_content;
-                //}
-
                 return result;
             }
             catch (Exception ex)
             {
+                _logger?.Log(LogLevel.Trace, new EventId(6000), "Error while trying to prepare body", ex, LogFormatter);
                 return null;
             }
         }
-        private string prepareQuery(string url, IEnumerable<RequestObject> paramList)
+        private string PrepareQuery(string url, IEnumerable<RequestObject> paramList)
         {
             string result = url;
             var _query = HttpUtility.ParseQueryString(string.Empty);
 
-            //Assuming all the inputs are serialzied or direct values.
-            foreach (var param in paramList.Where(p=>p.ParamType == ParamType.QueryString))
+            var _paramQueries = paramList.Where(p => p is IRequestQuery)?.Cast<IRequestQuery>().ToList();
+            if (_paramQueries == null || _paramQueries.Count == 0) return result; //return the input url
+
+            foreach (var param in _paramQueries)
             {
-                //We only process if the content is string.
-                if (param.Value is string strValue)
-                {
-                    _query[param.Key] = strValue; //Doesn't care if it is serialized or not. We just take the string.
+                var _key = param.Key;
+                var _value = param.Value;
+
+                if (param.ShouldEncode) {
+                    //Encode before adding
+                    if (!param.IsEncoded) {
+                        _key = Uri.EscapeDataString(_key);
+                        _value = Uri.EscapeDataString(_value);
+                        param.SetEncoded();
+                    }
                 }
+                _query[_key] = _value;
             }
+
             var _formed_query = _query.ToString();
             if(!string.IsNullOrWhiteSpace(_formed_query))
             {
@@ -549,44 +531,81 @@ namespace Haley.Utils
             }
             return result;
         }
-        private HttpContent prepareBody(RequestObject param) {
+        private HttpContent prepareRawBody(RawBodyRequest rawbody) {
             try {
                 HttpContent result = null;
-                switch (param.BodyType) {
+                switch (rawbody.BodyType) {
                     case BodyContentType.StringContent:
-                        string _serialized_content = null, mediatype = null;
-                        switch (param.StringBodyFormat) {
+                        string mediatype = null;
+                        string _serialized_content = rawbody.Value as string; //Assuming it is already serialized.
+
+                        switch (rawbody.StringBodyFormat) {
                             case StringContentFormat.Json:
-                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToJson(JsonConverters?.Values?.ToList());
+                                if (!rawbody.IsSerialized) {
+                                    _serialized_content = rawbody.ToJson(JsonConverters?.Values?.ToList());
+                                }
                                 mediatype = "application/json";
                                 break;
+
                             case StringContentFormat.XML:
-                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToXml().ToString();
+                                if (!rawbody.IsSerialized) {
+                                    _serialized_content = rawbody.ToXml().ToString();
+                                }
                                 mediatype = "application/xml";
+                                break;
+                            case StringContentFormat.PlainText:
+                                if (!rawbody.IsSerialized) {
+                                    _serialized_content = rawbody.ToJson(JsonConverters?.Values?.ToList());
+                                }
+                                mediatype = "text/plain";
                                 break;
                         }
                         result = new StringContent(_serialized_content, Encoding.UTF8, mediatype);
                         break;
+
                     case BodyContentType.ByteArrayContent:
                     case BodyContentType.StreamContent:
-                        if (param.Value is byte[] byteContent) {
+                        if (rawbody.Value is byte[] byteContent) {
                             //If byte content.
                             result = new ByteArrayContent(byteContent, 0, byteContent.Length);
-                        } else if (param.Value is Stream streamContent) {
+                        } else if (rawbody.Value is Stream streamContent) {
                             //If stream content.
                             result = new StreamContent(streamContent);
+                            //Dont' remove all headers. Only the content type. Header might have authentications properly set.
                             result.Headers.Remove("Content-Type");
                             result.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = param.FileName ?? "attachment" };
-                        } else {
-                            param.BodyType = BodyContentType.StringContent;
-                            return prepareBody(param); //If the input is not byte array, then change it to string content and process again.
-                        }
+                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.FileName ?? "attachment" };
+                        } 
                         break;
                 }
                 return result;
             } catch (Exception ex) {
-                Debug.WriteLine(ex.ToString());
+                _logger?.Log(LogLevel.Trace, new EventId(6001), "Error while trying to prepare Raw body", ex, LogFormatter);
+                return null;
+            }
+        }
+        private HttpContent prepareFormBody(FormBodyRequest formbody) {
+            try {
+                HttpContent result = null;
+                //Form can be url encoded form and multi form.. //TODO : REFINE
+                //For more than one add as form data.
+                MultipartFormDataContent form_content = new MultipartFormDataContent();
+                form_content.Headers.Remove("Content-Type");
+                form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+                foreach (var item in formbody.Value) {
+                    if (item.Value == null) continue;
+                    var rawContent = prepareRawBody(item.Value);
+                    if (string.IsNullOrWhiteSpace(item.Value.FileName)) {
+                        form_content.Add(rawContent, item.Key); //Also add the key.
+                    } else {
+                        form_content.Add(rawContent, item.Key, item.Value.FileName); //File name cannot be empty. Sending empty variable throws exception/
+                    }
+                }
+
+                return result;
+            } catch (Exception ex) {
+                _logger?.Log(LogLevel.Trace, new EventId(6002), "Error while trying to prepare Form body", ex, LogFormatter);
                 return null;
             }
         }

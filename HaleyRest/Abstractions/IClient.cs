@@ -93,24 +93,24 @@ namespace Haley.Abstractions
 
         //Get is only through query parameter.
         Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class;
-        Task<SerializedResponse<T>> GetAsync<T>(string resource_url, RequestParam parameter) where T : class;
-        Task<SerializedResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<RequestParam> parameters) where T : class;
+        Task<SerializedResponse<T>> GetAsync<T>(string resource_url, QueryParam parameter) where T : class;
+        Task<SerializedResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<QueryParam> parameters) where T : class;
 
         Task<StringResponse> GetAsync(string resource_url);
-        Task<StringResponse> GetAsync(string resource_url,RequestParam parameter);
-        Task<StringResponse> GetByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters);
+        Task<StringResponse> GetAsync(string resource_url,QueryParam parameter);
+        Task<StringResponse> GetByParamsAsync(string resource_url, IEnumerable<QueryParam> parameters);
 
         //Post
-        Task<IResponse> PostAsync(string resource_url, RequestObject param);
-        Task<IResponse> PostAsync(string resource_url, IEnumerable<RequestObject> parameters);
+        Task<IResponse> PostObjectAsync(string resource_url, RequestObject param);
+        Task<IResponse> PostObjectsAsync(string resource_url, IEnumerable<RequestObject> parameters);
 
         //Delete
-        Task<IResponse> DeleteAsync(string resource_url, RequestParam param);
-        Task<IResponse> DeleteAsync(string resource_url, IEnumerable<RequestParam> parameters);
+        Task<IResponse> DeleteObjectAsync(string resource_url, QueryParam param);
+        Task<IResponse> DeleteObjectsAsync(string resource_url, IEnumerable<QueryParam> parameters);
 
-        Task<IResponse> SendAsync(string url, object content, Method method,bool should_serialize,BodyContentType content_type = BodyContentType.StringContent);
-        Task<IResponse> SendAsync(string url, RequestObject param, Method method);
-        Task<IResponse> SendAsync(string url, IEnumerable<RequestObject> paramList, Method method);
+        Task<IResponse> SendAsync(string url, object content, Method method,bool is_serialized,BodyContentType content_type = BodyContentType.StringContent);
+        Task<IResponse> SendObjectAsync(string url, RequestObject param, Method method);
+        Task<IResponse> SendObjectsAsync(string url, IEnumerable<RequestObject> paramList, Method method);
         Task<IResponse> SendAsync(string url, HttpContent content, Method method);
         Task<IResponse> SendAsync(HttpRequestMessage request); //Final
         /// <summary>

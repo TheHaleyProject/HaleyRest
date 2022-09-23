@@ -21,7 +21,6 @@ using Microsoft.Extensions.Logging;
 namespace Haley.Abstractions
 {
     public interface ISerializeRequest {
-        bool ShouldSerialize { get; set; }
         bool IsSerialized { get; } //Should be set only once to avoid re-serializing again.
         void SetSerialized(); 
     }

@@ -9,20 +9,24 @@ using Haley.Abstractions;
 namespace Haley.Models
 {
     public class FormBodyRequest : RequestObject,IRequestBody {
-        public IEnumerable<RequestParam> Parameters { get; set; }
-        public void SetAllEncoded() {
-          if(Parameters != null) {
-                Parameters.ToList()?.ForEach(p => p.SetEncoded());
-            }
-        }
+        //public IEnumerable<RequestParam> Parameters { get; set; }
+        //public void SetAllEncoded() {
+        //  if(Parameters != null) {
+        //        Parameters.ToList()?.ForEach(p => p.SetEncoded());
+        //    }
+        //}
+
+        public new Dictionary<string, RawBodyRequest> Value => base.Value as Dictionary<string, RawBodyRequest>;
 
         /// <summary>
         /// Rest Param Object
         /// </summary>
         /// <param name="value"></param>
-        public FormBodyRequest(IEnumerable<RequestParam> parameters = null):base(null)
+        public FormBodyRequest(Dictionary<string, RawBodyRequest> value):base(value)
         {
-            Parameters = parameters ?? new List<RequestParam>();
+            if(value == null) {
+                base.UpdateValue(new Dictionary<string, RawBodyRequest>());
+            }
         }
     }
 }

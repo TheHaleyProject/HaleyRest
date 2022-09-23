@@ -10,5 +10,6 @@ namespace Haley.Enums
     {
         Json,
         XML,
+        PlainText
     }
 }
