@@ -17,6 +17,7 @@ using System.Diagnostics;
 using System.Text.Json.Serialization;
 using Haley.Models;
 using Microsoft.Extensions.Logging;
+using System.Net.Mime;
 
 namespace Haley.Abstractions
 {
@@ -99,19 +100,18 @@ namespace Haley.Abstractions
         Task<StringResponse> GetByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters);
 
         //Post
-        Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized);
         Task<IResponse> PostAsync(string resource_url, RequestObject param);
-        Task<IResponse> PostObjectsAsync(string resource_url, IEnumerable<RequestObject> parameters);
+        Task<IResponse> PostAsync(string resource_url, IEnumerable<RequestObject> parameters);
 
         //Delete
         Task<IResponse> DeleteAsync(string resource_url, RequestParam param);
-        Task<IResponse> DeleteByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters);
+        Task<IResponse> DeleteAsync(string resource_url, IEnumerable<RequestParam> parameters);
 
-        Task<IResponse> SendAsync(string url, object content, Method method = Method.GET, ParamType param_type = ParamType.Default, bool is_serialized = false);
-        Task<IResponse> SendAsync(string url, RequestObject param, Method method = Method.GET);
-        Task<IResponse> SendObjectsAsync(string url, IEnumerable<RequestObject> paramList, Method method = Method.GET);
-        Task<IResponse> SendAsync(string url, HttpContent content, Method method = Method.GET);
-        Task<IResponse> SendAsync(HttpRequestMessage request);
+        Task<IResponse> SendAsync(string url, object content, Method method,bool should_serialize,BodyContentType content_type = BodyContentType.StringContent);
+        Task<IResponse> SendAsync(string url, RequestObject param, Method method);
+        Task<IResponse> SendAsync(string url, IEnumerable<RequestObject> paramList, Method method);
+        Task<IResponse> SendAsync(string url, HttpContent content, Method method);
+        Task<IResponse> SendAsync(HttpRequestMessage request); //Final
         /// <summary>
         /// All calls to the client is blocked.
         /// </summary>

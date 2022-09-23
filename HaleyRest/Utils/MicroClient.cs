@@ -162,7 +162,7 @@ namespace Haley.Utils
         /// <returns></returns>
         public IClient AddRequestAuthentication(string token, string token_prefix = "Bearer")
         {
-            request_token = _getJWT(token, token_prefix);
+            request_token = prepareToken(token, token_prefix);
             return this;
         }
         public IClient ClearRequestAuthentication()
@@ -173,7 +173,7 @@ namespace Haley.Utils
         public IClient AddClientHeaderAuthentication(string token, string token_prefix = "Bearer")
         {
             ResetClientHeaders(); //Re initiate the client (clearing old headers)
-            var _headerToken = _getJWT(token, token_prefix);
+            var _headerToken = prepareToken(token, token_prefix);
             if (!string.IsNullOrWhiteSpace(_headerToken))
             {
                 //If it is null, then do not set anything. However, it would have already been cleared.
@@ -229,69 +229,46 @@ namespace Haley.Utils
         #endregion
 
         #region Post Methods
-        public async Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized) {
-            //return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
-            return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
-        }
-        public async Task<IResponse> PostDictionaryAsync(string resource_url, Dictionary<string, string> dictionary)
+        public async Task<IResponse> PostAsync(string resource_url, RequestObject parameter)
         {
-            //When we directly post dictionary of string as parameters, we just try to seriazlie them to string.
-            return await PostObjectAsync(resource_url, dictionary.ToJson(), true); //parameters are in Dictionary<string,string> format so it will be direclty serizlied without need for any converter.
+            return await PostAsync(resource_url, new List<RequestObject>() { parameter });
         }
-       
-        public async Task<IResponse> PostAsync(string resource_url, RequestObject param)
+        public async Task<IResponse> PostAsync(string resource_url, IEnumerable<RequestObject> parameters)
         {
-            return await PostAsync(resource_url, new List<RequestObject>() { param });
-        }
-        public async Task<IResponse> PostObjectsAsync(string resource_url, IEnumerable<RequestObject> parameters)
-        {
-            return await SendAsync(resource_url, paramList: param_list, Method.POST);
+            return await SendAsync(resource_url, parameters, Method.POST);
         }
         #endregion
 
         #region Delete Methods
-        public Task<IResponse> DeleteAsync(string resource_url, RequestParam param) {
-            throw new NotImplementedException();
+        public async Task<IResponse> DeleteAsync(string resource_url, RequestParam param) {
+            return await DeleteAsync(resource_url, new List<RequestParam>() { param });
         }
-        public Task<IResponse> DeleteByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters) {
-            throw new NotImplementedException();
-        }
-        public Task<IResponse> DeleteAsync(string resource_url, IEnumerable<RequestParam> parameters) {
-            throw new NotImplementedException();
+        public async Task<IResponse> DeleteAsync(string resource_url, IEnumerable<RequestParam> parameters) {
+            return await SendAsync(resource_url, parameters, Method.DELETE);
         }
         #endregion
 
         #region Send Methods
-        public Task<IResponse> SendObjectsAsync(string url, IEnumerable<RequestObject> paramList, Method method = Method.GET) {
-            throw new NotImplementedException();
-        }
-        public async Task<IResponse> SendAsync(string url, object content, Method method = Method.GET, ParamType param_type = ParamType.Default, bool is_serialized = false)
+        public async Task<IResponse> SendAsync(string url, object content, Method method, bool should_serialize, BodyContentType content_type = BodyContentType.StringContent)
         {
-            return await SendAsync(url, new RestParam("id", content, is_serialized, param_type), method);
+            return await SendAsync(url, new RawBodyRequest(content, should_serialize, content_type),method);
         }
-        public async Task<IResponse> SendAsync(string url, RequestObject param, Method method = Method.GET)
+        public async Task<IResponse> SendAsync(string url, RequestObject param, Method method)
         {
             //Just add this single param as a list to the send method.
             return await SendAsync(url, new List<RequestObject>() { param }, method);
         }
-        #endregion
-
-        #region Main calls
-        public async Task<IResponse> SendAsync(string url, IEnumerable<RequestObject> paramList, Method method = Method.GET)
-        {
+        public async Task<IResponse> SendAsync(string url, IEnumerable<RequestObject> paramList, Method method) {
             string inputURL = url;
-            processParamTypes(ref paramList, method);
-            var processedInputs = processInputs(inputURL, paramList, method);
+            var processedInputs = ConverToHttpContent(inputURL, paramList, method); //Put required url queries, bodies etc.
             return await SendAsync(processedInputs.url, processedInputs.content, method);
         }
-        public async Task<IResponse> SendAsync(string url, HttpContent content, Method method = Method.GET)
-        {
+        public async Task<IResponse> SendAsync(string url, HttpContent content, Method method) {
             //1. Here, we do not add anything to the URL or Content.
             //2. We just validate the URl and get the path and query part.
             //3. Add request headers and Authentication (if available).
             HttpMethod request_method = HttpMethod.Get;
-            switch (method)
-            {
+            switch (method) {
                 case Method.GET:
                     request_method = HttpMethod.Get;
                     break;
@@ -301,31 +278,27 @@ namespace Haley.Utils
                 case Method.DELETE:
                     request_method = HttpMethod.Delete;
                     break;
-                case Method.UPDATE:
+                case Method.PUT:
                     request_method = HttpMethod.Put;
                     break;
             }
             //At this point, do not parse the URL. It might already contain the URL params added to it. So just call the URL. // parseURI(url).resource_part
-            var request = new HttpRequestMessage(request_method, parseURI(url).pathQuery) { Content = content }; //URL should not have base part.
+            var request = new HttpRequestMessage(request_method, parseURI(url).pathQuery); //URL should not have base part.
+
+            if (content != null) request.Content = content; //Set content if not null
 
             //If the request has some kind of request headers, then add them.
-            if (!string.IsNullOrWhiteSpace(request_token))
-            {
+            if (!string.IsNullOrWhiteSpace(request_token)) {
                 //request.Headers.Authorization = new AuthenticationHeaderValue(request_token); //if the input is not correct, for instance, token has space, then it will throw exception. Add without validation.
                 request.Headers.TryAddWithoutValidation("Authorization", request_token);
             }
 
             //Add other request headers if available.
-            if (_requestHeaders != null && _requestHeaders?.Count > 0)
-            {
-                foreach (var kvp in _requestHeaders)
-                {
-                    try
-                    {
+            if (_requestHeaders != null && _requestHeaders?.Count > 0) {
+                foreach (var kvp in _requestHeaders) {
+                    try {
                         request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value); //Do not validate.
-                    }
-                    catch (Exception ex)
-                    {
+                    } catch (Exception ex) {
                         Debug.WriteLine(ex.ToString());
                     }
                 }
@@ -335,8 +308,7 @@ namespace Haley.Utils
             var _response = await SendAsync(request);
             _response.CopyTo(result); //Copy base value.
             //Response we receive will be base response.
-            if (_response.IsSuccessStatusCode)
-            {
+            if (_response.IsSuccessStatusCode) {
                 var _cntnt = _response.Content;
                 var _strCntnt = await _cntnt.ReadAsStringAsync();
                 result.StringContent = _strCntnt;
@@ -344,30 +316,24 @@ namespace Haley.Utils
             }
             return result; //All calls from here will receive stringResponse content.
         }
-        public async Task<IResponse> SendAsync(HttpRequestMessage request)
-        {
+        public async Task<IResponse> SendAsync(HttpRequestMessage request) {
             //if some sort of validation callback is assigned, then call that first.
-            if (RequestvalidationCallBack != null)
-            {
+            if (RequestvalidationCallBack != null) {
                 var validation_check = await RequestvalidationCallBack.Invoke(request);
-                if (!validation_check)
-                {
-                    return new StringResponse() {StringContent = "Request Validation call back failed." }; 
+                if (!validation_check) {
+                    return new StringResponse() { StringContent = "Internal Request Validation call back failed." };
                 }
             }
 
             //Here we donot modify anything. We just send and receive the response.
 
             HttpResponseMessage message;
-            if (add_cancellation_token)
-            {
+            if (add_cancellation_token) {
                 message = await BaseClient.SendAsync(request, cancellation_token);
                 //After the token is added, we just remove it.
                 cancellation_token = default(CancellationToken);
                 add_cancellation_token = false;
-            }
-            else
-            {
+            } else {
                 message = await BaseClient.SendAsync(request);
             }
 
@@ -401,6 +367,7 @@ namespace Haley.Utils
 
         #endregion
 
+        //TODO : Enhance thread safe methods.
         #region ThreadSafe Implementation
         private void WriteBlockDebugMessage(string title,string message = null)
         {
@@ -465,6 +432,23 @@ namespace Haley.Utils
         #endregion
 
         #region Helpers
+        private (HttpContent content, string url) ConverToHttpContent(string url, IEnumerable<RequestObject> paramList, Method method) {
+            try {
+                //HTTPCONENT itself is a abstract class. We can have StringContent, StreamContent,FormURLEncodedContent,MultiPartFormdataContent.
+                //Based on the params, we might add the data to content or to the url (in case of get).
+                if (paramList == null || paramList?.Count() == 0) return (null, url);
+                HttpContent processed_content = null;
+                string processed_url = url;
+
+                //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
+                //A get request can have a content body.
+                processed_content = createContent(paramList, method);
+                processed_url = createQuery(url, paramList);
+                return (processed_content, processed_url);
+            } catch (Exception ex) {
+                throw ex;
+            }
+        }
         private string  LogFormatter (string state,Exception exception)
         {
             if (exception == null) return state;
@@ -475,38 +459,7 @@ namespace Haley.Utils
             WriteTimerDebugMessage("Timer Elapsed", "Elapsed call.");
             UnBlockClient("Elapsed Call");
         }
-        private void processParamTypes(ref IEnumerable<RequestObject> @params,Method method)
-        {
-            try
-            {
-                if (@params == null || @params?.Count() == 0) return;
-
-                //For delete, post, put, we can have, data in both query string and also in request body.
-                //For get, the data should only be in the query string. So, remove all the params except the request body.
-
-                //CHANGE PARAMTYPE ONLY IF ITS NOT SET DIRECTLY. for instance, a POST can still have query and GET can still have Request body. This will be handled when trying to create the content.
-                //if paramtype is default, then we replace them with relevant types.
-                @params.Where(p=>p.ParamType == ParamType.Default)?.ToList().ForEach(q =>
-                {
-                    switch (method)
-                    {
-                        case Method.POST:
-                        case Method.DELETE:
-                        case Method.UPDATE:
-                            q.ParamType = ParamType.RequestBody; //if post, we then set the parameter as body
-                            break;
-                        case Method.GET:
-                            q.ParamType = ParamType.QueryString; //if post, we then set the parameter as body
-                            break;
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.ToString());
-            }
-        }
-        private string _getJWT(string token, string token_prefix)
+        private string prepareToken(string token, string token_prefix)
         {
             try
             {
@@ -518,65 +471,14 @@ namespace Haley.Utils
                 return null;
             }
         }
-        private HttpContent _createContent(RequestObject param)
+        private HttpContent createContent(IEnumerable<RequestObject> paramList, Method method)
         {
+            //IDEA : If body count is more than one, add as mulit form data. Else add as a single content of the specific body type.
             try
             {
                 HttpContent result = null;
-                switch (param.BodyType)
-                {
-                    case BodyContentType.StringContent:
-                        string _serialized_content = null, mediatype = null;
-                        switch (param.StringBodyFormat)
-                        {
-                            case StringContentFormat.Json:
-                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToJson(JsonConverters?.Values?.ToList());
-                                mediatype = "application/json";
-                                break;
-                            case StringContentFormat.XML:
-                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToXml().ToString();
-                                mediatype = "application/xml";
-                                break;
-                        }
-                        result = new StringContent(_serialized_content, Encoding.UTF8, mediatype);
-                        break;
-                    case BodyContentType.ByteArrayContent:
-                    case BodyContentType.StreamContent:
-                        if (param.Value is byte[] byteContent)
-                        {
-                            //If byte content.
-                            result = new ByteArrayContent(byteContent,0,byteContent.Length);
-                        }
-                        else if(param.Value is Stream streamContent)
-                        {
-                            //If stream content.
-                            result = new StreamContent(streamContent);
-                            result.Headers.Remove("Content-Type");
-                            result.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = param.FileName ?? "attachment" };
-                        }
-                        else
-                        {
-                            param.BodyType = BodyContentType.StringContent;
-                            return _createContent(param); //If the input is not byte array, then change it to string content and process again.
-                        }
-                        break;
-                }
-                return result;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine(ex.ToString());
-                return null;
-            }
-        }
-        private HttpContent _createContent(IEnumerable<RequestObject> paramList, Method method)
-        {
-            //If body count is more than one, add as mulit form data. Else add as a single content of the specific body type.
-            try
-            {
-                HttpContent result = null;
-                if (method == Method.GET) return result; //Get cannot have a body.
+                //if (method == Method.GET) return result; //Though not recommended, get can still have a body.
+
                 var _requestbodies = paramList.Where(p => p.ParamType == ParamType.RequestBody);
 
                 if (_requestbodies == null || _requestbodies?.Count() == 0) return result;
@@ -614,8 +516,7 @@ namespace Haley.Utils
                 return null;
             }
         }
-
-        private string _createQuery(string url, IEnumerable<RequestObject> paramList)
+        private string createQuery(string url, IEnumerable<RequestObject> paramList)
         {
             string result = url;
             var _query = HttpUtility.ParseQueryString(string.Empty);
@@ -636,25 +537,45 @@ namespace Haley.Utils
             }
             return result;
         }
-
-        private (HttpContent content,string url) processInputs(string url, IEnumerable<RequestObject> paramList, Method method)
-        {
-            try
-            {
-                //HTTPCONENT itself is a abstract class. We can have StringContent, StreamContent,FormURLEncodedContent,MultiPartFormdataContent.
-                //Based on the params, we might add the data to content or to the url (in case of get).
-                if (paramList == null || paramList?.Count() == 0) return (null,url);
-                HttpContent processed_content = null;
-                string processed_url = url;
-
-                //A get request cannot have a content body.
-                processed_content = _createContent(paramList, method);
-                processed_url = _createQuery(url, paramList);
-                return (processed_content, processed_url);
-            }
-            catch (Exception ex )
-            {
-                throw ex;
+        private HttpContent createContent(RequestObject param) {
+            try {
+                HttpContent result = null;
+                switch (param.BodyType) {
+                    case BodyContentType.StringContent:
+                        string _serialized_content = null, mediatype = null;
+                        switch (param.StringBodyFormat) {
+                            case StringContentFormat.Json:
+                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToJson(JsonConverters?.Values?.ToList());
+                                mediatype = "application/json";
+                                break;
+                            case StringContentFormat.XML:
+                                _serialized_content = param.IsSerialized ? param.Value as string : param.ToXml().ToString();
+                                mediatype = "application/xml";
+                                break;
+                        }
+                        result = new StringContent(_serialized_content, Encoding.UTF8, mediatype);
+                        break;
+                    case BodyContentType.ByteArrayContent:
+                    case BodyContentType.StreamContent:
+                        if (param.Value is byte[] byteContent) {
+                            //If byte content.
+                            result = new ByteArrayContent(byteContent, 0, byteContent.Length);
+                        } else if (param.Value is Stream streamContent) {
+                            //If stream content.
+                            result = new StreamContent(streamContent);
+                            result.Headers.Remove("Content-Type");
+                            result.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = param.FileName ?? "attachment" };
+                        } else {
+                            param.BodyType = BodyContentType.StringContent;
+                            return createContent(param); //If the input is not byte array, then change it to string content and process again.
+                        }
+                        break;
+                }
+                return result;
+            } catch (Exception ex) {
+                Debug.WriteLine(ex.ToString());
+                return null;
             }
         }
         private (string authority, string pathQuery) parseURI(string input_url)
@@ -696,12 +617,9 @@ namespace Haley.Utils
             return getBaseUri(inputURI.AbsoluteUri);
         }
         #endregion
-
         public override string ToString()
         {
             return this.FriendlyName;
         }
-
-        
     }
 }

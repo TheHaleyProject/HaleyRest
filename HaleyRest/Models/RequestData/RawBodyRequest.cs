@@ -8,7 +8,7 @@ using Haley.Enums;
 
 namespace Haley.Models
 {
-    public class RequestBodyRaw : RequestObject, ISerializeRequest
+    public class RawBodyRequest : RequestObject, ISerializeRequest
     {
         public bool ShouldSerialize { get; set; }
         public bool IsSerialized { get; private set; } //Should be set only once to avoid re-serializing again.
@@ -25,7 +25,7 @@ namespace Haley.Models
         /// <param name="is_serialized"></param>
         /// <param name="type"></param>
         /// <param name="body_type"></param>
-        public RequestBodyRaw(object value, bool should_serialize = true,BodyContentType body_type = BodyContentType.StringContent):base(value)
+        public RawBodyRequest(object value, bool should_serialize = true,BodyContentType body_type = BodyContentType.StringContent):base(value)
         {
             ShouldSerialize = should_serialize;
             BodyType = body_type;
