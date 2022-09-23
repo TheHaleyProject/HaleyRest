@@ -15,10 +15,11 @@ using System.Xml.Schema;
 using System.Security.Principal;
 using System.Security.Cryptography;
 using System.Data.Common;
+using Haley.Abstractions;
 
 namespace Haley.Utils
 {
-    public class OAuthUtil {
+    public class OAuthAdapter : IApiAdapters {
 
         #region Public Methods
         public string GetAuthorizationHeader(OAuthToken tokeninfo, OAuthRequestType request_type, OAuthRequestInfo requestInfo, Dictionary<string, string> parameters = null,bool include_prefix = false) {
@@ -162,6 +163,6 @@ namespace Haley.Utils
 
         #endregion
 
-        public OAuthUtil() { }
+        public OAuthAdapter() { }
     }
 }

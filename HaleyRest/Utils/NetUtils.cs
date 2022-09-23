@@ -20,10 +20,6 @@ namespace Haley.Utils
 
         //In a computing context, an epoch is the date and time relative to which a computer's clock and timestamp values are determined
         public static readonly DateTime Epoch = new DateTime(1970,1,1,0,0,0,DateTimeKind.Utc);
-        #region Properties
-        public static OAuthUtil OAuth = new OAuthUtil();
-
-        #endregion
         public static string DownloadFromWeb(string download_link, string file_name) {
             try {
                 string _path = null;

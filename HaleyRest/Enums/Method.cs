@@ -8,9 +8,9 @@ namespace Haley.Enums
 {
     public enum Method
     {
-       Get,
-       Post,
-       Delete,
-       Update
+       GET,
+       POST,
+       DELETE,
+       UPDATE
     }
 }

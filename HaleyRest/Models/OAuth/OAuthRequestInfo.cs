@@ -6,7 +6,7 @@ using System.Text;
 namespace Haley.Models {
     public class OAuthRequestInfo
     {
-        private Method _method = Method.Get;
+        private Method _method = Method.GET;
         public Method Method {
             get { return _method; }
             set { _method = value; }

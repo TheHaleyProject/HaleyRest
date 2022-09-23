@@ -21,9 +21,12 @@ using Trs =System.Timers;
 using System.Web;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
+using System.Data.Common;
 
 namespace Haley.Utils
 {
+    //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
+
     /// <summary>
     /// A simple straightforward HTTPClient Wrapper.
     /// </summary>
@@ -182,127 +185,106 @@ namespace Haley.Utils
         #endregion
 
         #region Get Methods
-        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class
-        {
+        public async Task<StringResponse> GetAsync(string resource_url) {
+            return await GetAsync(resource_url, null);
+        }
+        public async Task<StringResponse> GetAsync(string resource_url, RequestParam parameter) {
+            List<RequestParam> queries = new List<RequestParam>();
+            queries.Add(parameter);
+            return await GetByParamsAsync(resource_url, queries);
+        }
+        public async Task<StringResponse> GetByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters) {
+            return await GetByParamsAsync<string>(resource_url, parameters);
+        }
+
+        #endregion
+
+        #region GetSerialized Methods
+        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class {
             return await GetAsync<T>(resource_url, null);
         }
-        public async Task<StringResponse> GetAsync(string resource_url)
-        {
-            return await GetAsync(resource_url,null);
+        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url, RequestParam parameter) where T : class {
+            List<RequestParam> queries = new List<RequestParam>();
+            queries.Add(parameter);
+            return await GetByParamsAsync<T>(resource_url, queries);
         }
-
-        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url, string id_parameter) where T : class
-        {
-            if (!string.IsNullOrWhiteSpace(id_parameter))
-            {
-                Dictionary<string, string> _requestDic = new Dictionary<string, string>();
-                _requestDic.Add("id", id_parameter);
-                return await GetByDictionaryAsync<T>(resource_url, _requestDic);
-            }
-            else
-            {
-                return await GetAsync<T>(resource_url, null);
-            }
-        }
-        public async Task<StringResponse> GetAsync(string resource_url, string id_parameter)
-        {
-            if (!string.IsNullOrWhiteSpace(id_parameter))
-            {
-                Dictionary<string, string> _requestDic = new Dictionary<string, string>();
-                _requestDic.Add("id", id_parameter);
-                return await GetByDictionaryAsync(resource_url, _requestDic);
-            }
-            else
-            {
-                return await GetAsync(resource_url, null);
-            }
-        }
-
-        public async Task<StringResponse> GetByDictionaryAsync(string resource_url, Dictionary<string, string> parameters)
-        {
-            return await GetByDictionaryAsync<string>(resource_url, parameters);
-        }
-        public async Task<SerializedResponse<T>> GetByDictionaryAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class
-        {
-            List<RequestArgsBase> paramslist = new List<RequestArgsBase>();
-            if (parameters != null && parameters?.Count > 0)
-            {
-                foreach (var kvp in parameters)
-                {
-                    // For get, all the entries are in query string. Since we get the dictionary as string, we don't need serialization.
-                    paramslist.Add(new RestParam(kvp.Key, kvp.Value, true, ParamType.QueryString));
-                }
-            }
-
-            var _response = await SendAsync(resource_url, paramslist, Method.Get);
+        public async Task<SerializedResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<RequestParam> parameters) where T : class {
+            var _response = await SendAsync(resource_url, parameters, Method.GET);
             SerializedResponse<T> result = new SerializedResponse<T>();
             //_response.CopyTo(result);
             _response.MapProperties(result);
-            if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.StringContent))
-            {
-                try
-                {
-                    if (typeof(T) == typeof(string))
-                    {
+            if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.StringContent)) {
+                try {
+                    if (typeof(T) == typeof(string)) {
                         result.SerializedContent = result.StringContent as T;
-                    }
-                    else
-                    {
+                    } else {
                         result.SerializedContent = JsonSerializer.Deserialize<T>(result.StringContent);
                     }
-                }
-                catch (Exception)
-                {
+                } catch (Exception) {
                     result.SerializedContent = null; //Since it is a class, it should be nullable.
                 }
             }
             return result;
         }
-
         #endregion
 
         #region Post Methods
+        public async Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized) {
+            //return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
+            return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
+        }
         public async Task<IResponse> PostDictionaryAsync(string resource_url, Dictionary<string, string> dictionary)
         {
             //When we directly post dictionary of string as parameters, we just try to seriazlie them to string.
             return await PostObjectAsync(resource_url, dictionary.ToJson(), true); //parameters are in Dictionary<string,string> format so it will be direclty serizlied without need for any converter.
         }
-        public async Task<IResponse> PostObjectAsync(string resource_url, object content, bool is_serialized = false) 
+       
+        public async Task<IResponse> PostAsync(string resource_url, RequestObject param)
         {
-            //return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
-            return await PostAsync(resource_url, new RestParam("id", content, is_serialized, ParamType.RequestBody));
+            return await PostAsync(resource_url, new List<RequestObject>() { param });
         }
-        public async Task<IResponse> PostAsync(string resource_url, RequestArgsBase param)
+        public async Task<IResponse> PostObjectsAsync(string resource_url, IEnumerable<RequestObject> parameters)
         {
-            return await PostAsync(resource_url, new List<RequestArgsBase>() { param });
+            return await SendAsync(resource_url, paramList: param_list, Method.POST);
         }
-        public async Task<IResponse> PostAsync(string resource_url, IEnumerable<RequestArgsBase> param_list)
-        {
-            return await SendAsync(resource_url, paramList: param_list, Method.Post);
+        #endregion
+
+        #region Delete Methods
+        public Task<IResponse> DeleteAsync(string resource_url, RequestParam param) {
+            throw new NotImplementedException();
+        }
+        public Task<IResponse> DeleteByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters) {
+            throw new NotImplementedException();
+        }
+        public Task<IResponse> DeleteAsync(string resource_url, IEnumerable<RequestParam> parameters) {
+            throw new NotImplementedException();
         }
         #endregion
 
         #region Send Methods
-        public async Task<IResponse> SendAsync(string url, object content, Method method = Method.Get, ParamType param_type = ParamType.Default, bool is_serialized = false)
+        public Task<IResponse> SendObjectsAsync(string url, IEnumerable<RequestObject> paramList, Method method = Method.GET) {
+            throw new NotImplementedException();
+        }
+        public async Task<IResponse> SendAsync(string url, object content, Method method = Method.GET, ParamType param_type = ParamType.Default, bool is_serialized = false)
         {
             return await SendAsync(url, new RestParam("id", content, is_serialized, param_type), method);
         }
-        public async Task<IResponse> SendAsync(string url, RequestArgsBase param, Method method = Method.Get)
+        public async Task<IResponse> SendAsync(string url, RequestObject param, Method method = Method.GET)
         {
             //Just add this single param as a list to the send method.
-            return await SendAsync(url, new List<RequestArgsBase>() { param }, method);
+            return await SendAsync(url, new List<RequestObject>() { param }, method);
         }
         #endregion
 
         #region Main calls
-        public async Task<IResponse> SendAsync(string url, IEnumerable<RequestArgsBase> paramList, Method method = Method.Get)
+        public async Task<IResponse> SendAsync(string url, IEnumerable<RequestObject> paramList, Method method = Method.GET)
         {
             string inputURL = url;
             processParamTypes(ref paramList, method);
             var processedInputs = processInputs(inputURL, paramList, method);
             return await SendAsync(processedInputs.url, processedInputs.content, method);
         }
-        public async Task<IResponse> SendAsync(string url, HttpContent content, Method method = Method.Get)
+        public async Task<IResponse> SendAsync(string url, HttpContent content, Method method = Method.GET)
         {
             //1. Here, we do not add anything to the URL or Content.
             //2. We just validate the URl and get the path and query part.
@@ -310,16 +292,16 @@ namespace Haley.Utils
             HttpMethod request_method = HttpMethod.Get;
             switch (method)
             {
-                case Method.Get:
+                case Method.GET:
                     request_method = HttpMethod.Get;
                     break;
-                case Method.Post:
+                case Method.POST:
                     request_method = HttpMethod.Post;
                     break;
-                case Method.Delete:
+                case Method.DELETE:
                     request_method = HttpMethod.Delete;
                     break;
-                case Method.Update:
+                case Method.UPDATE:
                     request_method = HttpMethod.Put;
                     break;
             }
@@ -493,7 +475,7 @@ namespace Haley.Utils
             WriteTimerDebugMessage("Timer Elapsed", "Elapsed call.");
             UnBlockClient("Elapsed Call");
         }
-        private void processParamTypes(ref IEnumerable<RequestArgsBase> @params,Method method)
+        private void processParamTypes(ref IEnumerable<RequestObject> @params,Method method)
         {
             try
             {
@@ -508,12 +490,12 @@ namespace Haley.Utils
                 {
                     switch (method)
                     {
-                        case Method.Post:
-                        case Method.Delete:
-                        case Method.Update:
+                        case Method.POST:
+                        case Method.DELETE:
+                        case Method.UPDATE:
                             q.ParamType = ParamType.RequestBody; //if post, we then set the parameter as body
                             break;
-                        case Method.Get:
+                        case Method.GET:
                             q.ParamType = ParamType.QueryString; //if post, we then set the parameter as body
                             break;
                     }
@@ -536,7 +518,7 @@ namespace Haley.Utils
                 return null;
             }
         }
-        private HttpContent _createContent(RequestArgsBase param)
+        private HttpContent _createContent(RequestObject param)
         {
             try
             {
@@ -588,13 +570,13 @@ namespace Haley.Utils
                 return null;
             }
         }
-        private HttpContent _createContent(IEnumerable<RequestArgsBase> paramList, Method method)
+        private HttpContent _createContent(IEnumerable<RequestObject> paramList, Method method)
         {
             //If body count is more than one, add as mulit form data. Else add as a single content of the specific body type.
             try
             {
                 HttpContent result = null;
-                if (method == Method.Get) return result; //Get cannot have a body.
+                if (method == Method.GET) return result; //Get cannot have a body.
                 var _requestbodies = paramList.Where(p => p.ParamType == ParamType.RequestBody);
 
                 if (_requestbodies == null || _requestbodies?.Count() == 0) return result;
@@ -633,7 +615,7 @@ namespace Haley.Utils
             }
         }
 
-        private string _createQuery(string url, IEnumerable<RequestArgsBase> paramList)
+        private string _createQuery(string url, IEnumerable<RequestObject> paramList)
         {
             string result = url;
             var _query = HttpUtility.ParseQueryString(string.Empty);
@@ -655,7 +637,7 @@ namespace Haley.Utils
             return result;
         }
 
-        private (HttpContent content,string url) processInputs(string url, IEnumerable<RequestArgsBase> paramList, Method method)
+        private (HttpContent content,string url) processInputs(string url, IEnumerable<RequestObject> paramList, Method method)
         {
             try
             {
@@ -719,5 +701,7 @@ namespace Haley.Utils
         {
             return this.FriendlyName;
         }
+
+        
     }
 }

@@ -7,22 +7,19 @@ using Haley.Enums;
 
 namespace Haley.Models
 {
-    public abstract class RequestArgsBase
+    public class RequestObject
     {
         public string Id { get;}
         public object Value { get; set; }
-        public bool IsSerialized { get; set; }
         /// <summary>
         /// Rest Param Object
         /// </summary>
         /// <param name="value"></param>
-        /// <param name="is_serialized"></param>
 
-        public RequestArgsBase(object value, bool is_serialized = false)
+        public RequestObject(object value)
         {
             Id = Guid.NewGuid().ToString();
             Value = value;
-            IsSerialized = is_serialized;
         }
     }
 }

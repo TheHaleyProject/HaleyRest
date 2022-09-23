@@ -28,7 +28,6 @@ namespace Haley.Abstractions
         string Id { get; }
         string FriendlyName { get; }
         string BaseURI { get; }
-        bool AutoFixWrongParams { get; }
         ILogger Logger { get; }
         /// <summary>
         /// The Base HTTPClient
@@ -89,21 +88,29 @@ namespace Haley.Abstractions
         IClient AddClientHeaderAuthentication(string token, string token_prefix = "Bearer");
         IClient AddRequestCancellationToken(CancellationToken cancellation_token);
         IClient AddJsonConverters(JsonConverter converter);
+
+        //Get is only through query parameter.
         Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class;
-        Task<SerializedResponse<T>> GetAsync<T>(string resource_url, string id_parameter) where T : class;
-        Task<SerializedResponse<T>> GetByDictionaryAsync<T>(string resource_url, Dictionary<string, string> parameters) where T : class;
+        Task<SerializedResponse<T>> GetAsync<T>(string resource_url, RequestParam parameter) where T : class;
+        Task<SerializedResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<RequestParam> parameters) where T : class;
+
         Task<StringResponse> GetAsync(string resource_url);
-        Task<StringResponse> GetAsync(string resource_url,string id_parameter);
-        Task<StringResponse> GetByDictionaryAsync(string resource_url, Dictionary<string, string> parameters);
-        Task<IResponse> PostDictionaryAsync(string resource_url, Dictionary<string, string> dictionary);
-        Task<IResponse> PostObjectAsync(string resource_url, object content, bool is_serialized);
-        Task<IResponse> PostAsync(string resource_url, RequestArgsBase param);
-        Task<IResponse> PostAsync(string resource_url, IEnumerable<RequestArgsBase> param_list);
-       
-        Task<IResponse> SendAsync(string url, object content, Method method = Method.Get, ParamType param_type = ParamType.Default, bool is_serialized = false);
-        Task<IResponse> SendAsync(string url, RequestArgsBase param, Method method = Method.Get);
-        Task<IResponse> SendAsync(string url, IEnumerable<RequestArgsBase> paramList, Method method = Method.Get);
-        Task<IResponse> SendAsync(string url, HttpContent content, Method method = Method.Get);
+        Task<StringResponse> GetAsync(string resource_url,RequestParam parameter);
+        Task<StringResponse> GetByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters);
+
+        //Post
+        Task<IResponse> PostAsync(string resource_url, object content, bool is_serialized);
+        Task<IResponse> PostAsync(string resource_url, RequestObject param);
+        Task<IResponse> PostObjectsAsync(string resource_url, IEnumerable<RequestObject> parameters);
+
+        //Delete
+        Task<IResponse> DeleteAsync(string resource_url, RequestParam param);
+        Task<IResponse> DeleteByParamsAsync(string resource_url, IEnumerable<RequestParam> parameters);
+
+        Task<IResponse> SendAsync(string url, object content, Method method = Method.GET, ParamType param_type = ParamType.Default, bool is_serialized = false);
+        Task<IResponse> SendAsync(string url, RequestObject param, Method method = Method.GET);
+        Task<IResponse> SendObjectsAsync(string url, IEnumerable<RequestObject> paramList, Method method = Method.GET);
+        Task<IResponse> SendAsync(string url, HttpContent content, Method method = Method.GET);
         Task<IResponse> SendAsync(HttpRequestMessage request);
         /// <summary>
         /// All calls to the client is blocked.
