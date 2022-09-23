@@ -83,11 +83,11 @@ namespace Haley.Utils
         #endregion
 
         #region FluentMethods
+
         public IClient SetLogger(ILogger logger) {
             _logger = logger;
             return this;
         }
-
         public IClient AddJsonConverters(JsonConverter converter)
         {
             try
@@ -103,7 +103,7 @@ namespace Haley.Utils
             catch (Exception ex)
             {
                 EventId _eventid = new EventId(5001, "JSONConverter Add Error");
-                _logger?.Log(LogLevel.Trace, _eventid, "Error while trying to JSON Converter", ex, LogFormatter);
+                WriteLog(LogLevel.Trace, _eventid, "Error while trying to JSON Converter", ex);
                 return this;
             }
         }
@@ -126,7 +126,7 @@ namespace Haley.Utils
         }
         public IClient ResetClientHeaders()
         {
-            _logger.Log(LogLevel.Debug, "Resetting the client headers");
+            WriteLog(LogLevel.Debug, "Resetting the client headers");
             //remains the same throught the life time of this client.
             //BaseClient.BaseAddress = _base_uri; //Base address cannot be reset multiple times.
             BaseClient.DefaultRequestHeaders.Accept.Clear();
@@ -139,7 +139,7 @@ namespace Haley.Utils
         public IClient ClearRequestHeaders()
         {
             _requestHeaders = new ConcurrentDictionary<string, IEnumerable<string>>(); //Clear the requestheaders.
-            _logger.Log(LogLevel.Debug, "Client request headers cleared");
+            WriteLog(LogLevel.Debug, "Client request headers cleared");
             return this;
         }
         public IClient AddRequestHeaders(string name, string value)
@@ -264,7 +264,7 @@ namespace Haley.Utils
         }
         public async Task<IResponse> SendAsync(string url, HttpContent content, Method method) {
 
-            _logger.LogInformation($@"Initiating a {method} request to {url} with base url {BaseURI}");
+            WriteLog(LogLevel.Information, $@"Initiating a {method} request to {url} with base url {BaseURI}");
             //1. Here, we do not add anything to the URL or Content.
             //2. We just validate the URl and get the path and query part.
             //3. Add request headers and Authentication (if available).
@@ -300,7 +300,7 @@ namespace Haley.Utils
                     try {
                         request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value); //Do not validate.
                     } catch (Exception ex) {
-                        _logger?.Log(LogLevel.Debug, new EventId(2001,"Header Error"), "Error while trying to add a header", ex, LogFormatter);
+                        WriteLog(LogLevel.Debug, new EventId(2001, "Header Error"), "Error while trying to add a header", ex);
                     }
                 }
             }
@@ -322,7 +322,7 @@ namespace Haley.Utils
             if (RequestvalidationCallBack != null) {
                 var validation_check = await RequestvalidationCallBack.Invoke(request);
                 if (!validation_check) {
-                    _logger.LogInformation("Local request validation failed. Please verify the validation methods to return true on successful validation");
+                    WriteLog(LogLevel.Information, "Local request validation failed. Please verify the validation methods to return true on successful validation");
                     return new StringResponse() { StringContent = "Internal Request Validation call back failed." };
                 }
             }
@@ -452,10 +452,18 @@ namespace Haley.Utils
                 throw ex;
             }
         }
-        private string  LogFormatter (string state,Exception exception)
+        private string LogFormatter (string state,Exception exception)
         {
             if (exception == null) return state;
             return (state + Environment.NewLine+ exception.Message.ToString() + Environment.NewLine + exception.StackTrace.ToString());
+        }
+
+        private void WriteLog(LogLevel level, EventId evtId, string msg, Exception ex) {
+            _logger?.Log(level, evtId, msg, ex, LogFormatter);
+        }
+
+        private void WriteLog(LogLevel level,string msg) {
+            _logger?.Log(level, msg);
         }
         private void SemaPhoreTimer_Elapsed(object sender, Trs.ElapsedEventArgs e)
         {
@@ -496,7 +504,7 @@ namespace Haley.Utils
             }
             catch (Exception ex)
             {
-                _logger?.Log(LogLevel.Trace, new EventId(6000), "Error while trying to prepare body", ex, LogFormatter);
+                WriteLog(LogLevel.Trace, new EventId(6000), "Error while trying to prepare body", ex);
                 return null;
             }
         }
@@ -580,7 +588,7 @@ namespace Haley.Utils
                 }
                 return result;
             } catch (Exception ex) {
-                _logger?.Log(LogLevel.Trace, new EventId(6001), "Error while trying to prepare Raw body", ex, LogFormatter);
+               WriteLog(LogLevel.Trace, new EventId(6001), "Error while trying to prepare Raw body", ex);
                 return null;
             }
         }
@@ -605,7 +613,7 @@ namespace Haley.Utils
 
                 return result;
             } catch (Exception ex) {
-                _logger?.Log(LogLevel.Trace, new EventId(6002), "Error while trying to prepare Form body", ex, LogFormatter);
+               WriteLog(LogLevel.Trace, new EventId(6002), "Error while trying to prepare Form body", ex);
                 return null;
             }
         }

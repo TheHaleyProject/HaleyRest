@@ -48,7 +48,7 @@ namespace HaleyRest.ConsoleTest
             t3.Join();
             t4.Join();
             
-            if (_res1.IsSuccess)
+            if (_res1.IsSuccessStatusCode)
             {
                 Console.WriteLine("Res 1 Success");
             }
@@ -80,7 +80,7 @@ namespace HaleyRest.ConsoleTest
                 Dictionary<string, string> _params = new Dictionary<string, string>();
                 _params.Add("category", "animals");
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.BlockClient(5, message).GetAsync(url,_params);
+                var _response = await _client.BlockClient(5, message).GetByParamsAsync(url,_params.ToRequestParams(true));
                 return _response;
             }
             catch (Exception ex)
@@ -95,7 +95,7 @@ namespace HaleyRest.ConsoleTest
             try
             {
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.BlockClient(6, message).SendAsync(url,new RestParam("auth","null",true));
+                var _response = await _client.BlockClient(6, message).SendObjectAsync(url,new QueryParam("auth","null",true),Method.GET);
                 return _response;
             }
             catch (Exception ex)
