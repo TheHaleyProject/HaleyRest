@@ -4,8 +4,6 @@ using System.Text;
 
 namespace Haley.Utils {
     public static class ApiAdapters {
-        public static OAuthAdapter OAuth = new OAuthAdapter();
-
         // *** TO DO *** //
         //Github adapter
         //Onedrive adapter

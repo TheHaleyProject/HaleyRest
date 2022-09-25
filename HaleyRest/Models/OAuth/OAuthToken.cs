@@ -7,20 +7,22 @@ using System.Text;
 namespace Haley.Models
 {
     public class OAuthToken {
-        public SignatureType SignatureType { get; set; }
         public string ConsumerKey { get; }
         public string ConsumerSecret { get; }
         public string TokenKey { get; private set; }
         public string TokenSecret { get;private set; }
-        public string Verifier { get; set; }
+        public string Verifier { get; private set; }
         public string Version { get; set; }
-
+        public SignatureType SignatureType { get; set; }
+        public OAuthToken SetVerifier(string verifier) {
+            if (string.IsNullOrWhiteSpace(Verifier)) Verifier = verifier;
+            return this;
+        }
         public OAuthToken UpdateTokenInfo(string token_key, string token_secret) {
             TokenKey = token_key ?? string.Empty;
             TokenSecret = token_secret ?? string.Empty;
             return this;
         }
-
         public OAuthToken(string consumer_key, string consumer_secret, string token_key, string token_secret) {
             TokenKey = token_key ?? string.Empty;
             TokenSecret = token_secret ?? string.Empty;

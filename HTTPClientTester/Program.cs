@@ -52,9 +52,8 @@ namespace HTTPClientTester
             Dictionary<string, string> _input2 = new Dictionary<string, string>();
             _input2.Add("id", "2983");
 
-            //Call("gorest", _endpoint);
-            //Call("gorest", _endpoint,_input,true);
-            //Call("gorest", _userendpoint, _input2);
+            Call("gorest", _userendpoint, _input, true);
+            Call("gorest", _userendpoint, _input2);
 
             Call("gorest", _userendpoint, _input2);
 
@@ -76,7 +75,7 @@ namespace HTTPClientTester
                 if (content.IsDictionary())
                 {
                 
-                    _res = _client.GetByDictionaryAsync(endpoint, content as Dictionary<string, string>).Result;
+                    _res = _client.GetByParamsAsync(endpoint, (content as Dictionary<string, string>).ToRequestParams(true)).Result;
                 }
                 else
                 {
@@ -90,11 +89,7 @@ namespace HTTPClientTester
                 if (content is string)
                 {
                     //HTTP CONtent. StringContent, Stream Content, Bytearrayconten, multiform data content.. 
-                    _res = _client.PostObjectAsync(endpoint, content, true).Result;
-                }
-                else if (content.IsDictionary())
-                {
-                    _res = _client.PostDictionaryAsync(endpoint, content as Dictionary<string,string>).Result;
+                    _res = _client.SendAsync(endpoint, content,Haley.Enums.Method.POST, true).Result;
                 }
             }
             string contentmsg = string.Empty;

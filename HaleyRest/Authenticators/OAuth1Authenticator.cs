@@ -19,10 +19,10 @@ using Haley.Abstractions;
 
 namespace Haley.Utils
 {
-    public class OAuthAdapter : IApiAdapters {
+    public class OAuth1Authenticator : IAuthenticator{
 
         #region Public Methods
-        public string GetAuthorizationHeader(OAuthToken tokeninfo, OAuthRequestType request_type, OAuthRequestInfo requestInfo, Dictionary<string, string> parameters = null,bool include_prefix = false) {
+        public string GetAuthorizationHeader(OAuthToken tokeninfo, OAuthRequestType request_type, OAuthRequest requestInfo, Dictionary<string, string> parameters = null,bool include_prefix = false) {
             ValidateInputs(tokeninfo, request_type,requestInfo);
             var headerParams = GenerateHeaderParams(tokeninfo, request_type, requestInfo);
             var basestring = GenerateBaseString(headerParams, tokeninfo, requestInfo);
@@ -33,7 +33,7 @@ namespace Haley.Utils
         #endregion
 
         #region Private Methods
-        private void ValidateInputs(OAuthToken tokeninfo, OAuthRequestType request_type, OAuthRequestInfo requestInfo) {
+        private void ValidateInputs(OAuthToken tokeninfo, OAuthRequestType request_type, OAuthRequest requestInfo) {
             //To generate a signature, irrespective of whether we send the secret across or not, we need, ConsumerKey and Consumer secret.
             if (tokeninfo == null) throw new ArgumentNullException("OAuth Token information");
             if (string.IsNullOrWhiteSpace(tokeninfo.ConsumerKey)) throw new ArgumentNullException(nameof(OAuthToken.ConsumerKey));
@@ -51,7 +51,7 @@ namespace Haley.Utils
             }
         }
 
-        private string WriteAuthHeader(SortedDictionary<string,string> param_list,bool include_prefix) {
+        private string WriteAuthHeader(Dictionary<string,string> param_list,bool include_prefix) {
             StringBuilder sb = new StringBuilder();
 
             if (include_prefix) sb.Append("OAuth "); //OAuth followed by a space.
@@ -70,7 +70,7 @@ namespace Haley.Utils
             return Convert.ToBase64String(hash);
         }
 
-        private string GenerateSignature(OAuthToken tokeninfo, OAuthRequestInfo requestInfo,string base_string) {
+        private string GenerateSignature(OAuthToken tokeninfo, OAuthRequest requestInfo,string base_string) {
             string result = String.Empty;
 
             //Check : https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
@@ -102,7 +102,7 @@ namespace Haley.Utils
             return Uri.EscapeDataString(result);
         }
 
-        private string GenerateBaseString(SortedDictionary<string,string> dic, OAuthToken tokeninfo,OAuthRequestInfo requestInfo) {
+        private string GenerateBaseString(Dictionary<string,string> dic, OAuthToken tokeninfo,OAuthRequest requestInfo) {
             //Concatenate all the header params to generate the base string that will be signed in next steps.
 
             //1.HTTP Method name followed by ampersand
@@ -123,7 +123,7 @@ namespace Haley.Utils
             return sb.ToString();
         }
 
-        private SortedDictionary<string, string> GenerateHeaderParams(OAuthToken tokeninfo, OAuthRequestType request_type,OAuthRequestInfo requestInfo) {
+        private Dictionary<string, string> GenerateHeaderParams(OAuthToken tokeninfo, OAuthRequestType request_type,OAuthRequest requestInfo) {
             var unixtimestamp = NetUtils.GetTimeStamp();
             var nonce = NetUtils.GetNonce(32);
 
@@ -158,11 +158,11 @@ namespace Haley.Utils
                 default:
                     break;
             }
-            return result;
+            return result.ToDictionary(p=> p.Key, p=> p.Value);
         }
 
         #endregion
 
-        public OAuthAdapter() { }
+        public OAuth1Authenticator() { }
     }
 }

@@ -19,5 +19,21 @@ namespace Haley.Utils
             public const string SessionHandle = "oauth_session_handle";
             public const string Signature = "oauth_signature";
         }
+
+        public class Headers {
+            public const string Host = "Host";
+            public const string Accept = "Accept";
+            public const string AcceptEncoding = "Accept-Encoding";
+            public const string AcceptLanguage = "Accept-Language";
+            public const string SetCookie = "Set-Cookie";
+            public const string UserAgent = "User-Agent";
+            public const string Authorization = "Authorization";
+            public const string ContentType = "Content-Type";
+            public const string CacheControl = "Cache-Control";
+            public const string Cookie = "Cookie";
+            public const string KeepAlive = "Keep-Alive";
+            public const string ProxyAuthenticate = "Proxy-Authenticate";
+            public const string ProxyAuthorization = "Proxy-Authorization";
+        }
     }
 }
