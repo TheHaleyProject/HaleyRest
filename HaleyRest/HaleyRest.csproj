@@ -31,6 +31,7 @@
   </PropertyGroup>
   
 <ItemGroup>
+  <Compile Remove="Models\Base\MicroClient-OLD.cs" />
   <Compile Remove="Utils\RestWrappers.cs" />
 </ItemGroup>
 

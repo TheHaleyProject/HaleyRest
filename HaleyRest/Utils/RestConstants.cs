@@ -31,7 +31,7 @@ namespace Haley.Utils
             public const string ContentType = "Content-Type";
             public const string CacheControl = "Cache-Control";
             public const string Cookie = "Cookie";
-            public const string KeepAlive = "Keep-Alive";
+            public const string Connection = "Connection";
             public const string ProxyAuthenticate = "Proxy-Authenticate";
             public const string ProxyAuthorization = "Proxy-Authorization";
         }

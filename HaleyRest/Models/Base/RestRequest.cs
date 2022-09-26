@@ -37,10 +37,8 @@ namespace Haley.Models
         IEnumerable<RequestObject> _requestObjects = new List<RequestObject>();//Prio-3
 
         #region Attributes
-        HttpClientHandler handler = new HttpClientHandler();
-        static string boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
-        bool _add_cancellation_token = false;
-        CancellationToken _cancellation_token = default(CancellationToken);
+        string _boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
+        CancellationToken? _cancellation_token = null;
         bool _inherit_headers = false;
         bool _inherit_authentication = false;
        
@@ -71,55 +69,78 @@ namespace Haley.Models
         }
 
         public override IRestBase WithEndPoint(string resource_url_endpoint) {
-            URL = parseURI(resource_url_endpoint).pathQuery;
+            URL = ParseURI(resource_url_endpoint).pathQuery; //What if we needed to use full URL?
             return this;
         }
 
         public override IRestBase AddCancellationToken(CancellationToken cancellation_token) {
             this._cancellation_token = cancellation_token;
-            _add_cancellation_token = true; //We have added a token, so we set it.
             return this;
         }
         #endregion
 
         #region Get Methods
-        public async Task<StringResponse> GetAsync(string resource_url) {
-            return await GetAsync(resource_url, null);
+        public override async Task<RestResponse> GetAsync() {
+            return await GetAsync<string>();
         }
-        public async Task<StringResponse> GetAsync(string resource_url, QueryParam parameter) {
-            List<QueryParam> queries = new List<QueryParam>();
-            queries.Add(parameter);
-            return await GetByParamsAsync(resource_url, queries);
+        public override async Task<RestResponse<T>> GetAsync<T>() {
+            var _response = await SendAsync(Method.GET);
+            RestResponse<T> result = new RestResponse<T>();
+            _response.MapProperties(result);
+            if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.Content)) {
+                try {
+                    if (typeof(T) == typeof(string)) {
+                        result.Content = result.Content as T;
+                    }
+                    else {
+                        result.Content = JsonSerializer.Deserialize<T>(result.Content);
+                    }
+                }
+                catch (Exception) {
+                    result.Content = null; //Since it is a class, it should be nullable.
+                }
+            }
+            return result;
         }
-        public async Task<StringResponse> GetByParamsAsync(string resource_url, IEnumerable<QueryParam> parameters) {
-            return await GetByParamsAsync<string>(resource_url, parameters);
+       
+        public override async Task<IResponse> PostAsync() {
+            return await SendAsync(Method.POST);
+        }
+        public override Task<IResponse> PutAsync() {
+            return await SendAsync(Method.PUT);
+        }
+        public override Task<IResponse> DeleteAsync() {
+            return await SendAsync(Method.DELETE);
+        }
+        public override Task<IResponse> SendAsync(Method method) {
+            throw new NotImplementedException();
         }
 
         #endregion
 
         #region GetSerialized Methods
-        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url) where T : class {
+        public async Task<RestResponse<T>> GetAsync<T>(string resource_url) where T : class {
             return await GetAsync<T>(resource_url, null);
         }
-        public async Task<SerializedResponse<T>> GetAsync<T>(string resource_url, QueryParam parameter) where T : class {
+        public async Task<RestResponse<T>> GetAsync<T>(string resource_url, QueryParam parameter) where T : class {
             List<QueryParam> queries = new List<QueryParam>();
             queries.Add(parameter);
             return await GetByParamsAsync<T>(resource_url, queries);
         }
-        public async Task<SerializedResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<QueryParam> parameters) where T : class {
+        public async Task<RestResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<QueryParam> parameters) where T : class {
             var _response = await SendObjectsAsync(resource_url, parameters, Method.GET);
-            SerializedResponse<T> result = new SerializedResponse<T>();
+            RestResponse<T> result = new RestResponse<T>();
             //_response.CopyTo(result);
             _response.MapProperties(result);
-            if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.StringContent)) {
+            if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.Content)) {
                 try {
                     if (typeof(T) == typeof(string)) {
-                        result.SerializedContent = result.StringContent as T;
+                        result.Content = result.Content as T;
                     } else {
-                        result.SerializedContent = JsonSerializer.Deserialize<T>(result.StringContent);
+                        result.Content = JsonSerializer.Deserialize<T>(result.Content);
                     }
                 } catch (Exception) {
-                    result.SerializedContent = null; //Since it is a class, it should be nullable.
+                    result.Content = null; //Since it is a class, it should be nullable.
                 }
             }
             return result;
@@ -146,25 +167,27 @@ namespace Haley.Models
         }
         #endregion
         #region region Request Creation
-        public override IRestBase CreateRequest() {
-            return CreateRequest(null);
+        public override IRestBase WithQuery(QueryParam param) {
+            return WithParameter(param);
         }
-        public override IRestBase CreateRequest(object content, bool is_serialized, BodyContentType content_type) {
-            return CreateRequest(new RawBodyRequest(content,is_serialized,content_type));
+        public override IRestBase WithQueries(IEnumerable<QueryParam> parameters) {
+            return WithParameters(parameters);
         }
-        public override IRestBase CreateRequest(RequestObject param) {
-            return CreateRequestWithParams(new List<RequestObject>() { param });
+        public override IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type) {
+            return WithParameter(new RawBodyRequest(content,is_serialized,content_type));
         }
-        public override IRestBase CreateRequestWithParams(IEnumerable<RequestObject> parameters) {
+        public override IRestBase WithParameter(RequestObject param) {
+            return WithParameters(new List<RequestObject>() { param });
+        }
+        public override IRestBase WithParameters(IEnumerable<RequestObject> parameters) {
             _requestObjects = parameters;
             return this;
         }
-        public override IRestBase CreateRequestWithContent(HttpContent content) {
+        public override IRestBase WithContent(HttpContent content) {
             _content = content;
             return this;
         }
         #endregion
-
 
         #region Send Methods
         public async Task<IResponse> SendAsync(string url, object content, Method method, bool is_serialized, BodyContentType content_type = BodyContentType.StringContent)
@@ -203,7 +226,7 @@ namespace Haley.Models
                     break;
             }
             //At this point, do not parse the URL. It might already contain the URL params added to it. So just call the URL. // parseURI(url).resource_part
-            var request = new HttpRequestMessage(request_method, parseURI(url).pathQuery); //URL should not have base part.
+            var request = new HttpRequestMessage(request_method, ParseURI(url).pathQuery); //URL should not have base part.
 
             if (content != null) request.Content = content; //Set content if not null
 
@@ -224,86 +247,215 @@ namespace Haley.Models
                 }
             }
 
-            StringResponse result = new StringResponse();
+            RestResponse result = new StringResponse();
             var _response = await SendAsync(request);
             _response.CopyTo(result); //Copy base value.
             //Response we receive will be base response.
             if (_response.IsSuccessStatusCode) {
                 var _cntnt = _response.Content;
                 var _strCntnt = await _cntnt.ReadAsStringAsync();
-                result.StringContent = _strCntnt;
+                result.Content = _strCntnt;
 
             }
             return result; //All calls from here will receive stringResponse content.
         }
-        public override Task<SerializedResponse<T>> GetAsync<T>() {
-            throw new NotImplementedException();
-        }
-        public override Task<StringResponse> GetAsync() {
-            throw new NotImplementedException();
-        }
-        public override Task<IResponse> PostAsync() {
-            throw new NotImplementedException();
-        }
-        public override Task<IResponse> PutAsync() {
-            throw new NotImplementedException();
-        }
-        public override Task<IResponse> DeleteAsync() {
-            throw new NotImplementedException();
-        }
-        public override Task<IResponse> SendAsync(Method method) {
-            throw new NotImplementedException();
-        }
+        
         internal async Task<IResponse> ExecuteAsync(HttpRequestMessage request) {
             this._request = request;
+            ValidateClient();
+            var _validationCB = Client.GetRequestValidation();
             //if some sort of validation callback is assigned, then call that first.
-            if (_validationCallback != null) {
-                var validation_check = await _validationCallback.Invoke(request);
+            if (_validationCB != null) {
+                var validation_check = await _validationCB.Invoke(request);
                 if (!validation_check) {
                     WriteLog(LogLevel.Information, "Local request validation failed. Please verify the validation methods to return true on successful validation");
-                    return new StringResponse() { StringContent = "Internal Request Validation call back failed." };
+                    return new StringResponse() { Content = "Internal Request Validation call back failed." };
                 }
             }
 
             //Here we donot modify anything. We just send and receive the response.
             HttpResponseMessage message;
-            if (_add_cancellation_token) {
-                message = await Client.BaseClient.SendAsync(request, _cancellation_token);
+            if (_cancellation_token != null) {
+                message = await Client.BaseClient.SendAsync(request, _cancellation_token.Value);
             }
             else {
                 message = await Client.BaseClient.SendAsync(request);
             }
 
-            var _response = new BaseResponse() { OriginalResponse = message };
+            var _response = new ResponseBase() { OriginalResponse = message };
             return _response;
         }
         internal async Task<IResponse> ExecuteAsync(HttpRequestMessage request,CancellationToken cancellation_token) {
-            this._request = request;
-            //if some sort of validation callback is assigned, then call that first.
-            if (_validationCallback != null) {
-                var validation_check = await _validationCallback.Invoke(request);
-                if (!validation_check) {
-                    WriteLog(LogLevel.Information, "Local request validation failed. Please verify the validation methods to return true on successful validation");
-                    return new StringResponse() { StringContent = "Internal Request Validation call back failed." };
+            this._cancellation_token = cancellation_token;
+            return await ExecuteAsync(request);
+        }
+        #endregion
+
+        #region Helpers
+
+        private void ValidateClient() {
+            if (Client == null) throw new ArgumentNullException(nameof(Client));
+        }
+        protected (HttpContent content, string url) ConverToHttpContent(string url, IEnumerable<RequestObject> paramList, Method method) {
+            try {
+                //HTTPCONENT itself is a abstract class. We can have StringContent, StreamContent,FormURLEncodedContent,MultiPartFormdataContent.
+                //Based on the params, we might add the data to content or to the url (in case of get).
+                if (paramList == null || paramList?.Count() == 0) return (null, url ?? string.Empty);
+                HttpContent processed_content = null;
+                string processed_url = url;
+
+                //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
+                //A get request can have a content body.
+
+                //The paramlist might containt multiple request param(which will be trasformed in to query). however, only one (the first) request body will be considered
+                processed_content = PrepareBody(paramList, method);
+                processed_url = PrepareQuery(url, paramList);
+                return (processed_content, processed_url);
+            }
+            catch (Exception ex) {
+                throw ex;
+            }
+        }
+        protected HttpContent PrepareBody(IEnumerable<RequestObject> paramList, Method method) {
+            //We can add only one type of body to an object. If we have more than one type, we log the error and take only the first item.
+            try {
+                HttpContent result = null;
+                //paramList.Where(p=> typeof(IRequestBody).IsAssignableFrom(p))?.f
+                var _requestBody = paramList.Where(p => p is IRequestBody)?.FirstOrDefault();
+                if (_requestBody == null || _requestBody.Value == null) return result; //Not need of further processing for null values.
+                WriteLog(LogLevel.Debug, $@"Request body of type {_requestBody?.GetType()} is getting added to request body.");
+                if (_requestBody is RawBodyRequest rawReq) {
+                    //Just add a raw content and send.
+                    result = prepareRawBody(rawReq);
+
                 }
+                else if (_requestBody is FormBodyRequest formreq) {
+                    //Decide if this is multipart form or urlencoded form data
+                    result = prepareFormBody(formreq);
+                }
+                return result;
+            }
+            catch (Exception ex) {
+                WriteLog(LogLevel.Trace, new EventId(6000), "Error while trying to prepare body", ex);
+                return null;
+            }
+        }
+        protected string PrepareQuery(string url, IEnumerable<RequestObject> paramList) {
+            string result = url;
+            var _query = HttpUtility.ParseQueryString(string.Empty);
+
+            var _paramQueries = paramList.Where(p => p is IRequestQuery)?.Cast<IRequestQuery>().ToList();
+            if (_paramQueries == null || _paramQueries.Count == 0) return result; //return the input url
+
+            foreach (var param in _paramQueries) {
+                var _key = param.Key;
+                var _value = param.Value;
+
+                if (param.ShouldEncode) {
+                    //Encode before adding
+                    if (!param.IsEncoded) {
+                        _key = Uri.EscapeDataString(_key);
+                        _value = Uri.EscapeDataString(_value);
+                        param.SetEncoded();
+                    }
+                }
+                _query[_key] = _value;
             }
 
-            //Here we donot modify anything. We just send and receive the response.
-            HttpResponseMessage message;
-            if (_add_cancellation_token) {
-                message = await Client.BaseClient.SendAsync(request, _cancellation_token);
+            var _formed_query = _query.ToString();
+            if (!string.IsNullOrWhiteSpace(_formed_query)) {
+                result = result + "?" + _formed_query;
             }
-            else {
-                message = await Client.BaseClient.SendAsync(request);
-            }
+            return result;
+        }
+        protected HttpContent prepareRawBody(RawBodyRequest rawbody) {
+            try {
+                HttpContent result = null;
+                switch (rawbody.BodyType) {
+                    case BodyContentType.StringContent:
+                        string mediatype = null;
+                        string _serialized_content = rawbody.Value as string; //Assuming it is already serialized.
 
-            var _response = new BaseResponse() { OriginalResponse = message };
-            return _response;
+                        switch (rawbody.StringBodyFormat) {
+                            case StringContentFormat.Json:
+                                if (!rawbody.IsSerialized) {
+                                    _serialized_content = rawbody.ToJson(_jsonConverters?.Values?.ToList());
+                                }
+                                mediatype = "application/json";
+                                break;
+
+                            case StringContentFormat.XML:
+                                if (!rawbody.IsSerialized) {
+                                    _serialized_content = rawbody.ToXml().ToString();
+                                }
+                                mediatype = "application/xml";
+                                break;
+                            case StringContentFormat.PlainText:
+                                if (!rawbody.IsSerialized) {
+                                    _serialized_content = rawbody.ToJson(_jsonConverters?.Values?.ToList());
+                                }
+                                mediatype = "text/plain";
+                                break;
+                        }
+                        result = new StringContent(_serialized_content, Encoding.UTF8, mediatype);
+                        break;
+
+                    case BodyContentType.ByteArrayContent:
+                    case BodyContentType.StreamContent:
+                        if (rawbody.Value is byte[] byteContent) {
+                            //If byte content.
+                            result = new ByteArrayContent(byteContent, 0, byteContent.Length);
+                        }
+                        else if (rawbody.Value is Stream streamContent) {
+                            //If stream content.
+                            result = new StreamContent(streamContent);
+                            //Dont' remove all headers. Only the content type. Header might have authentications properly set.
+                            result.Headers.Remove("Content-Type");
+                            result.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.FileName ?? "attachment" };
+                        }
+                        break;
+                }
+                return result;
+            }
+            catch (Exception ex) {
+                WriteLog(LogLevel.Trace, new EventId(6001), "Error while trying to prepare Raw body", ex);
+                return null;
+            }
+        }
+        protected HttpContent prepareFormBody(FormBodyRequest formbody) {
+            try {
+                HttpContent result = null;
+                //Form can be url encoded form and multi form.. //TODO : REFINE
+                //For more than one add as form data.
+                MultipartFormDataContent form_content = new MultipartFormDataContent();
+                form_content.Headers.Remove("Content-Type");
+                form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+                foreach (var item in formbody.Value) {
+                    if (item.Value == null) continue;
+                    var rawContent = prepareRawBody(item.Value);
+                    if (string.IsNullOrWhiteSpace(item.Value.FileName)) {
+                        form_content.Add(rawContent, item.Key); //Also add the key.
+                    }
+                    else {
+                        form_content.Add(rawContent, item.Key, item.Value.FileName); //File name cannot be empty. Sending empty variable throws exception/
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex) {
+                WriteLog(LogLevel.Trace, new EventId(1003), "Error while trying to prepare Form body", ex);
+                return null;
+            }
         }
         #endregion
         public override string ToString()
         {
             return this.URL;
         }
+
+        
     }
 }

@@ -25,7 +25,7 @@ namespace ConsoleApp1
 
         static async Task<bool> CallMethod() {
             try {
-                var client = new MicroClient("https://daep.withbc.com");
+                var client = new FluentClient("https://daep.withbc.com");
                 client.AddRequestHeaders("Accept", "*/*");
                 client.AddRequestHeaders("User-Agent", "HaleyRest_V1.9");
                 var _res2 = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/"));

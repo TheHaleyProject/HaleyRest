@@ -54,7 +54,7 @@ namespace Haley.Rest
         { return AddClient(@enum.GetKey(), base_uri,friendly_name,requestvalidation, logger); }
 
         public static IClient AddClient(string key, string base_uri, string friendly_name = null, Func<HttpRequestMessage, Task<bool>> requestvalidation = null, ILogger logger = null)
-        {return AddClient(key, new MicroClient(base_uri,friendly_name, requestvalidation,logger));}
+        {return AddClient(key, new FluentClient(base_uri,friendly_name, requestvalidation,logger));}
 
         public static bool RemoveClient(string key)
         {

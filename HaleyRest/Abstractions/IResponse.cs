@@ -8,9 +8,9 @@ namespace Haley.Abstractions
     public interface IResponse
     {
         IRequest Request { get; }
-        HttpResponseMessage OriginalResponse { get; set; }
+        HttpResponseMessage OriginalResponse { get; }
         bool IsSuccessStatusCode { get; }
-        HttpContent Content { get; }
-        void CopyTo(IResponse input);
+        HttpContent OriginalContent { get; }
+        void UpdateResponse(IResponse source_response);
     }
 }
