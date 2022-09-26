@@ -14,6 +14,7 @@ namespace Haley.Models {
         public string RequestURL { get; private set; }
         public string CallBackURL { get; set; }
         public string SessionHandle { get; set; }
+        public OAuthRequestType RequestType { get; set; }
         public SortedDictionary<string,string> Parameters { get; set; }
         public OAuthRequest SetRequestURL(string request_url) {
             RequestURL = request_url;

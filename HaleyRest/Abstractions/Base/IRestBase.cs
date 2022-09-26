@@ -50,7 +50,7 @@ namespace Haley.Abstractions
         IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type);
 
         Task<RestResponse<T>> GetAsync<T>() where T : class;
-        Task<RestResponse> GetAsync();
+        Task<IResponse> GetAsync();
         Task<IResponse> PostAsync();
         Task<IResponse> PutAsync();
         Task<IResponse> DeleteAsync();

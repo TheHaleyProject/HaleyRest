@@ -7,10 +7,11 @@ namespace Haley.Abstractions
 {
     public interface IResponse
     {
+        string Message { get; }
         IRequest Request { get; }
         HttpResponseMessage OriginalResponse { get; }
         bool IsSuccessStatusCode { get; }
         HttpContent OriginalContent { get; }
-        void UpdateResponse(IResponse source_response);
+        IResponse UpdateResponse(IResponse source_response);
     }
 }

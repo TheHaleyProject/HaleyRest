@@ -52,6 +52,30 @@ namespace Haley.Models
         public RestRequest(string end_point_url) : this(end_point_url,null) { }
         public RestRequest() : this(string.Empty, null) { }
         #endregion
+
+        #region region Request Creation
+        public override IRestBase WithQuery(QueryParam param) {
+            return WithParameter(param);
+        }
+        public override IRestBase WithQueries(IEnumerable<QueryParam> parameters) {
+            return WithParameters(parameters);
+        }
+        public override IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type) {
+            return WithParameter(new RawBodyRequest(content, is_serialized, content_type));
+        }
+        public override IRestBase WithParameter(RequestObject param) {
+            return WithParameters(new List<RequestObject>() { param });
+        }
+        public override IRestBase WithParameters(IEnumerable<RequestObject> parameters) {
+            _requestObjects = parameters;
+            return this;
+        }
+        public override IRestBase WithContent(HttpContent content) {
+            _content = content;
+            return this;
+        }
+        #endregion
+
         #region Base Fluent Methods
         public IRequest SetClient(IClient client) {
             this.Client = client;
@@ -80,133 +104,62 @@ namespace Haley.Models
         #endregion
 
         #region Get Methods
-        public override async Task<RestResponse> GetAsync() {
-            return await GetAsync<string>();
-        }
         public override async Task<RestResponse<T>> GetAsync<T>() {
-            var _response = await SendAsync(Method.GET);
-            RestResponse<T> result = new RestResponse<T>();
-            _response.MapProperties(result);
-            if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.Content)) {
-                try {
-                    if (typeof(T) == typeof(string)) {
-                        result.Content = result.Content as T;
-                    }
-                    else {
-                        result.Content = JsonSerializer.Deserialize<T>(result.Content);
-                    }
-                }
-                catch (Exception) {
-                    result.Content = null; //Since it is a class, it should be nullable.
-                }
-            }
+            var _response = await GetAsync();
+            var _options = GetSerializerOptions();
+            var result = await new RestResponse<T>(_response.OriginalResponse)
+                               .SetConveter((str) => { return JsonSerializer.Deserialize<T>(str,_options); })
+                               .FetchContent();
             return result;
         }
-       
+        public override async Task<IResponse> GetAsync() {
+            return await SendAsync(Method.GET);
+        }
         public override async Task<IResponse> PostAsync() {
             return await SendAsync(Method.POST);
         }
-        public override Task<IResponse> PutAsync() {
+        public override async Task<IResponse> PutAsync() {
             return await SendAsync(Method.PUT);
         }
-        public override Task<IResponse> DeleteAsync() {
+        public override async Task<IResponse> DeleteAsync() {
             return await SendAsync(Method.DELETE);
         }
-        public override Task<IResponse> SendAsync(Method method) {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-
-        #region GetSerialized Methods
-        public async Task<RestResponse<T>> GetAsync<T>(string resource_url) where T : class {
-            return await GetAsync<T>(resource_url, null);
-        }
-        public async Task<RestResponse<T>> GetAsync<T>(string resource_url, QueryParam parameter) where T : class {
-            List<QueryParam> queries = new List<QueryParam>();
-            queries.Add(parameter);
-            return await GetByParamsAsync<T>(resource_url, queries);
-        }
-        public async Task<RestResponse<T>> GetByParamsAsync<T>(string resource_url, IEnumerable<QueryParam> parameters) where T : class {
-            var _response = await SendObjectsAsync(resource_url, parameters, Method.GET);
-            RestResponse<T> result = new RestResponse<T>();
-            //_response.CopyTo(result);
-            _response.MapProperties(result);
-            if (_response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(result.Content)) {
-                try {
-                    if (typeof(T) == typeof(string)) {
-                        result.Content = result.Content as T;
-                    } else {
-                        result.Content = JsonSerializer.Deserialize<T>(result.Content);
-                    }
-                } catch (Exception) {
-                    result.Content = null; //Since it is a class, it should be nullable.
-                }
+        public override async Task<IResponse> SendAsync(Method method) {
+            ValidateClient();
+            if (URL == null) URL = string.Empty;
+            if (_request != null) {
+                //Prio 1 : If request is available.
+                return await ExecuteAsync(_request);
+            } else if(_content != null) {
+                //Prio 2 : If content is availble without request.
+                return await SendAsync(_content, method);
+            } else if(_requestObjects != null && _requestObjects.Count() > 0) {
+                //Prio 3: Conver the request objects to httpcontent.
+                var processedInputs = ConverToHttpContent(URL, _requestObjects, method); //Here, URL is just the end point.
+                return await SendAsync(processedInputs.content, method);
             }
-            return result;
+            else {
+                //No content, no queries. Just send the plain request with the given method.
+                return await SendAsync(null, method);
+            }
         }
-        #endregion
 
-        #region Post Methods
-        public async Task<IResponse> PostObjectAsync(string resource_url, RequestObject parameter)
-        {
-            return await PostObjectsAsync(resource_url, new List<RequestObject>() { parameter });
-        }
-        public async Task<IResponse> PostObjectsAsync(string resource_url, IEnumerable<RequestObject> parameters)
-        {
-            return await SendObjectsAsync(resource_url, parameters, Method.POST);
-        }
-        #endregion
-
-        #region Delete Methods
-        public async Task<IResponse> DeleteObjectAsync(string resource_url, QueryParam param) {
-            return await DeleteObjectsAsync(resource_url, new List<QueryParam>() { param });
-        }
-        public async Task<IResponse> DeleteObjectsAsync(string resource_url, IEnumerable<QueryParam> parameters) {
-            return await SendObjectsAsync(resource_url, parameters, Method.DELETE);
-        }
-        #endregion
-        #region region Request Creation
-        public override IRestBase WithQuery(QueryParam param) {
-            return WithParameter(param);
-        }
-        public override IRestBase WithQueries(IEnumerable<QueryParam> parameters) {
-            return WithParameters(parameters);
-        }
-        public override IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type) {
-            return WithParameter(new RawBodyRequest(content,is_serialized,content_type));
-        }
-        public override IRestBase WithParameter(RequestObject param) {
-            return WithParameters(new List<RequestObject>() { param });
-        }
-        public override IRestBase WithParameters(IEnumerable<RequestObject> parameters) {
-            _requestObjects = parameters;
-            return this;
-        }
-        public override IRestBase WithContent(HttpContent content) {
-            _content = content;
-            return this;
-        }
         #endregion
 
         #region Send Methods
-        public async Task<IResponse> SendAsync(string url, object content, Method method, bool is_serialized, BodyContentType content_type = BodyContentType.StringContent)
-        {
-            return await SendObjectAsync(url, new RawBodyRequest(content, is_serialized, content_type),method);
-        }
-        public async Task<IResponse> SendObjectAsync(string url, RequestObject param, Method method)
-        {
-            //Just add this single param as a list to the send method.
-            return await SendObjectsAsync(url, new List<RequestObject>() { param }, method);
-        }
-        public async Task<IResponse> SendObjectsAsync(string url, IEnumerable<RequestObject> paramList, Method method) {
-            string inputURL = url;
-            var processedInputs = ConverToHttpContent(inputURL, paramList, method); //Put required url queries, bodies etc.
-            return await SendAsync(processedInputs.url, processedInputs.content, method);
-        }
-        public async Task<IResponse> SendAsync(string url, HttpContent content, Method method) {
 
-            WriteLog(LogLevel.Information, $@"Initiating a {method} request to {url} with base url {BaseURI}");
+        private string GetAuthToken(IAuthenticator authenticator) {
+            string result = string.Empty;
+            if(authenticator is OAuth1Authenticator oauth1) {
+                //Assuming that the 
+            } else if (authenticator is TokenAuthenticator tokenauth) {
+                result = tokenauth.GetToken(); //Assuming that the token is set already.
+            }
+            return result;
+        }
+        async Task<IResponse> SendAsync(HttpContent content, Method method) {
+
+            WriteLog(LogLevel.Information, $@"Initiating a {method} request to {URL} with base url {Client.URL}");
             //1. Here, we do not add anything to the URL or Content.
             //2. We just validate the URl and get the path and query part.
             //3. Add request headers and Authentication (if available).
@@ -226,10 +179,22 @@ namespace Haley.Models
                     break;
             }
             //At this point, do not parse the URL. It might already contain the URL params added to it. So just call the URL. // parseURI(url).resource_part
-            var request = new HttpRequestMessage(request_method, ParseURI(url).pathQuery); //URL should not have base part.
+            var uri_components = ParseURI(URL);
+            var resource_Url = uri_components.pathQuery;
 
+            if (string.IsNullOrWhiteSpace(Client.URL)) {
+                resource_Url = URL; //Take the full url, irrespective of whatever is provided, assuming that the URL is absolute.
+            }
+
+            var request = new HttpRequestMessage(request_method, resource_Url);
             if (content != null) request.Content = content; //Set content if not null
 
+            #region Authentication and Headers
+
+            if (_authenticator != null) {
+                //Use this authenticator to generate token.
+                
+            }
             //If the request has some kind of request headers, then add them.
             if (!string.IsNullOrWhiteSpace(request_token)) {
                 request.Headers.Authorization = new AuthenticationHeaderValue(request_token); //if the input is not correct, for instance, token has space, then it will throw exception. Add without validation.
@@ -237,15 +202,19 @@ namespace Haley.Models
             }
 
             //Add other request headers if available.
-            if (_requestHeaders != null && _requestHeaders?.Count > 0) {
+            if (GetHeaders != null && _requestHeaders?.Count > 0) {
                 foreach (var kvp in _requestHeaders) {
                     try {
                         request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value); //Do not validate.
-                    } catch (Exception ex) {
+                    }
+                    catch (Exception ex) {
                         WriteLog(LogLevel.Debug, new EventId(2001, "Header Error"), "Error while trying to add a header", ex);
                     }
                 }
             }
+
+            #endregion
+
 
             RestResponse result = new StringResponse();
             var _response = await SendAsync(request);
@@ -259,17 +228,22 @@ namespace Haley.Models
             }
             return result; //All calls from here will receive stringResponse content.
         }
-        
+        internal async Task<IResponse> ExecuteAsync(HttpRequestMessage request, CancellationToken cancellation_token) {
+            this._cancellation_token = cancellation_token;
+            return await ExecuteAsync(request);
+        }
+
         internal async Task<IResponse> ExecuteAsync(HttpRequestMessage request) {
             this._request = request;
             ValidateClient();
             var _validationCB = Client.GetRequestValidation();
+
             //if some sort of validation callback is assigned, then call that first.
             if (_validationCB != null) {
                 var validation_check = await _validationCB.Invoke(request);
                 if (!validation_check) {
                     WriteLog(LogLevel.Information, "Local request validation failed. Please verify the validation methods to return true on successful validation");
-                    return new StringResponse() { Content = "Internal Request Validation call back failed." };
+                    return new BaseResponse(null).SetMessage("Internal Request Validation call back failed.");
                 }
             }
 
@@ -281,14 +255,9 @@ namespace Haley.Models
             else {
                 message = await Client.BaseClient.SendAsync(request);
             }
-
-            var _response = new ResponseBase() { OriginalResponse = message };
-            return _response;
+            return new BaseResponse(message);
         }
-        internal async Task<IResponse> ExecuteAsync(HttpRequestMessage request,CancellationToken cancellation_token) {
-            this._cancellation_token = cancellation_token;
-            return await ExecuteAsync(request);
-        }
+        
         #endregion
 
         #region Helpers

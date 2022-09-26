@@ -6,6 +6,6 @@ namespace Haley.Enums {
     public enum OAuthRequestType {
         AccessToken,
         RequestToken,
-        //To support more items later
+        ForProtectedResource,
     }
 }

@@ -21,10 +21,25 @@ namespace Haley.Utils
 {
     public class OAuth1Authenticator : IAuthenticator{
 
+        public OAuthToken Token { get; set; }
+        public OAuthRequest Request { get; set; }
+        public Dictionary<string,string> Parameters { get; set; }
+        public bool IncludePrefix { get; set; }
+
+        public OAuth1Authenticator():this(null,null,null,false) { }
+        public OAuth1Authenticator(OAuthToken tokeninfo, OAuthRequest requestInfo, Dictionary<string, string> parameters, bool include_prefix ) {
+            Token = tokeninfo ?? new OAuthToken(string.Empty, string.Empty);
+            Request = requestInfo ?? new OAuthRequest();
+            Parameters = parameters ?? new Dictionary<string, string>();
+            IncludePrefix = include_prefix;
+        }
         #region Public Methods
-        public string GetAuthorizationHeader(OAuthToken tokeninfo, OAuthRequestType request_type, OAuthRequest requestInfo, Dictionary<string, string> parameters = null,bool include_prefix = false) {
-            ValidateInputs(tokeninfo, request_type,requestInfo);
-            var headerParams = GenerateHeaderParams(tokeninfo, request_type, requestInfo);
+        public string GetAuthorizationHeader() {
+            return GetAuthorizationHeader(Token, Request, Parameters, IncludePrefix);
+        }
+        public string GetAuthorizationHeader(OAuthToken tokeninfo, OAuthRequest requestInfo, Dictionary<string, string> parameters = null,bool include_prefix = false) {
+            ValidateInputs(tokeninfo, requestInfo);
+            var headerParams = GenerateHeaderParams(tokeninfo, requestInfo);
             var basestring = GenerateBaseString(headerParams, tokeninfo, requestInfo);
             var signature = GenerateSignature(tokeninfo,requestInfo, basestring);
             headerParams.Add(RestConstants.OAuth.Signature, signature);
@@ -33,14 +48,14 @@ namespace Haley.Utils
         #endregion
 
         #region Private Methods
-        private void ValidateInputs(OAuthToken tokeninfo, OAuthRequestType request_type, OAuthRequest requestInfo) {
+        private void ValidateInputs(OAuthToken tokeninfo, OAuthRequest requestInfo) {
             //To generate a signature, irrespective of whether we send the secret across or not, we need, ConsumerKey and Consumer secret.
             if (tokeninfo == null) throw new ArgumentNullException("OAuth Token information");
             if (string.IsNullOrWhiteSpace(tokeninfo.ConsumerKey)) throw new ArgumentNullException(nameof(OAuthToken.ConsumerKey));
             if (string.IsNullOrWhiteSpace(tokeninfo.ConsumerSecret)) throw new ArgumentNullException(nameof(OAuthToken.ConsumerSecret));
             if (string.IsNullOrWhiteSpace(requestInfo.RequestURL)) throw new ArgumentNullException(nameof(requestInfo.RequestURL));
 
-            switch (request_type) {
+            switch (requestInfo.RequestType) {
                 case OAuthRequestType.AccessToken:
                     //If the request is for access token, then we need both the key and secret for the access token
                     if (string.IsNullOrWhiteSpace(tokeninfo.TokenKey)) throw new ArgumentNullException(nameof(OAuthToken.TokenKey));
@@ -123,7 +138,7 @@ namespace Haley.Utils
             return sb.ToString();
         }
 
-        private Dictionary<string, string> GenerateHeaderParams(OAuthToken tokeninfo, OAuthRequestType request_type,OAuthRequest requestInfo) {
+        private Dictionary<string, string> GenerateHeaderParams(OAuthToken tokeninfo, OAuthRequest requestInfo) {
             var unixtimestamp = NetUtils.GetTimeStamp();
             var nonce = NetUtils.GetNonce(32);
 
@@ -151,7 +166,7 @@ namespace Haley.Utils
 
             //Type based
 
-            switch (request_type) {
+            switch (requestInfo.RequestType) {
                 case OAuthRequestType.AccessToken:
                     result.Add(RestConstants.OAuth.Token, tokeninfo.TokenKey);
                     break;

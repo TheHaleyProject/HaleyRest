@@ -111,7 +111,7 @@ namespace Haley.Models
             return await new RestRequest().GetAsync<T>();
         }
 
-        public override async Task<RestResponse> GetAsync() {
+        public override async Task<IResponse> GetAsync() {
             return await new RestRequest().GetAsync();
         }
 

@@ -130,6 +130,22 @@ namespace Haley.Models
         #endregion
 
         #region Helpers
+        protected JsonSerializerOptions GetSerializerOptions() {
+            var options =  new JsonSerializerOptions()
+            {
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
+                UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement,
+            };
+            try {
+                _jsonConverters.Values.ToList().ForEach(p => options.Converters.Add(p));
+                return options;
+            }
+            catch (Exception ex) {
+                WriteLog(LogLevel.Debug, $@"Error while trying to generate json serializer options.{ex.ToString()}");
+                return options;
+            }
+        }
         protected string LogFormatter(string state, Exception exception) {
             if (exception == null) return state;
             return (state + Environment.NewLine + exception.Message.ToString() + Environment.NewLine + exception.StackTrace.ToString());
@@ -179,7 +195,7 @@ namespace Haley.Models
         public abstract IRestBase WithQuery(QueryParam param);
         public abstract IRestBase WithQueries(IEnumerable<QueryParam> parameters);
         public abstract Task<RestResponse<T>> GetAsync<T>() where T : class;
-        public abstract Task<RestResponse> GetAsync();
+        public abstract Task<IResponse> GetAsync();
         public abstract Task<IResponse> PostAsync();
         public abstract Task<IResponse> PutAsync();
         public abstract Task<IResponse> DeleteAsync();
