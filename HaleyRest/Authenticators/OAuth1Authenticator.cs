@@ -21,29 +21,57 @@ namespace Haley.Utils
 {
     public class OAuth1Authenticator : IAuthenticator{
 
-        public OAuthToken Token { get; set; }
-        public OAuthRequest Request { get; set; }
+        public OAuthToken Token { get; private set; }
+        public OAuthRequest Request { get; private set; }
         public Dictionary<string,string> Parameters { get; set; }
-        public bool IncludePrefix { get; set; }
+        public string Prefix { get; set; }
 
-        public OAuth1Authenticator():this(null,null,null,false) { }
-        public OAuth1Authenticator(OAuthToken tokeninfo, OAuthRequest requestInfo, Dictionary<string, string> parameters, bool include_prefix ) {
+        public OAuth1Authenticator():this(null,null) { }
+        public OAuth1Authenticator(OAuthToken tokeninfo) {
             Token = tokeninfo ?? new OAuthToken(string.Empty, string.Empty);
-            Request = requestInfo ?? new OAuthRequest();
-            Parameters = parameters ?? new Dictionary<string, string>();
-            IncludePrefix = include_prefix;
+            Request = new OAuthRequest();
+            Parameters = new Dictionary<string, string>();
+            Prefix = "OAuth";
+        }
+        public OAuth1Authenticator(string consumer_key,string consumer_secret) :this(new OAuthToken(consumer_key,consumer_secret)) {
+
         }
         #region Public Methods
-        public string GetAuthorizationHeader() {
-            return GetAuthorizationHeader(Token, Request, Parameters, IncludePrefix);
+
+        public OAuth1Authenticator SetOAuthRequest(OAuthRequest request) {
+            Request = request ?? new OAuthRequest();
+            return this;
         }
-        public string GetAuthorizationHeader(OAuthToken tokeninfo, OAuthRequest requestInfo, Dictionary<string, string> parameters = null,bool include_prefix = false) {
+
+        public OAuth1Authenticator UpdateToken(OAuthToken newToken) {
+            Token = newToken ?? new OAuthToken(null,null);
+            return this;
+        }
+
+        public OAuth1Authenticator UpdateToken(string consumer_key, string consumer_secret) {
+            return UpdateToken(new OAuthToken(consumer_key, consumer_secret));   
+        }
+
+        public OAuth1Authenticator UpdateAccessTokenInformation(string access_token_key, string access_token_secret) {
+            Token.UpdateTokenInfo(access_token_key,access_token_secret);
+            return this;
+        }
+
+        public string GenerateToken(HttpRequestMessage request) {
+            //We use the request to fetch the headers and body before processing.
+            return GetAuthorizationHeader();
+        }
+
+        public string GetAuthorizationHeader() {
+            return GetAuthorizationHeader(Token, Request, Parameters,Prefix);
+        }
+        public string GetAuthorizationHeader(OAuthToken tokeninfo, OAuthRequest requestInfo, Dictionary<string, string> parameters,string prefix) {
             ValidateInputs(tokeninfo, requestInfo);
             var headerParams = GenerateHeaderParams(tokeninfo, requestInfo);
             var basestring = GenerateBaseString(headerParams, tokeninfo, requestInfo);
             var signature = GenerateSignature(tokeninfo,requestInfo, basestring);
             headerParams.Add(RestConstants.OAuth.Signature, signature);
-            return WriteAuthHeader(headerParams,include_prefix);
+            return WriteAuthHeader(headerParams, prefix);
         }
         #endregion
 
@@ -66,11 +94,10 @@ namespace Haley.Utils
             }
         }
 
-        private string WriteAuthHeader(Dictionary<string,string> param_list,bool include_prefix) {
+        private string WriteAuthHeader(Dictionary<string,string> param_list,string prefix) {
             StringBuilder sb = new StringBuilder();
 
-            if (include_prefix) sb.Append("OAuth "); //OAuth followed by a space.
-
+            prefix = string.IsNullOrWhiteSpace(prefix) ? string.Empty : $@"{prefix.Trim()} "; //prefix followed by a space
             //Donot include items which are not required in the header.
             foreach (var item in param_list) {
                 sb.AppendFormat("{0}=\"{1}\",", item.Key, item.Value);
@@ -177,7 +204,5 @@ namespace Haley.Utils
         }
 
         #endregion
-
-        public OAuth1Authenticator() { }
     }
 }

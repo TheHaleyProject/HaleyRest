@@ -28,6 +28,8 @@ namespace Haley.Abstractions
     {
         string Id { get; }
         string URL { get; }
+        IRestBase InheritHeaders(bool inherit = true);
+        IRestBase InheritAuthentication(bool inherit = true); //Give preference to Authenticator to generate a new token. If authenticator is not available, take the parent token.
         IRestBase SetLogger(ILogger logger);
         IRestBase ResetHeaders();
         IRestBase ResetHeaders(Dictionary<string, IEnumerable<string>> reset_values);
@@ -38,8 +40,6 @@ namespace Haley.Abstractions
         IRestBase AddCancellationToken(CancellationToken cancellation_token);
         IRestBase AddJsonConverter(JsonConverter converter);
         IRestBase RemoveJsonConverter(JsonConverter converter);
-        IRestBase ClearAuthentication();
-        IRestBase SetAuthenticator(IAuthenticator authenticator);
         IRestBase WithEndPoint(string resource_url_endpoint);
         //Prepare Request
         IRestBase WithParameter(RequestObject param);
@@ -48,6 +48,9 @@ namespace Haley.Abstractions
         IRestBase WithQueries(IEnumerable<QueryParam> parameters);
         IRestBase WithContent(HttpContent content);
         IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type);
+        IRestBase SetAuthenticator(IAuthenticator authenticator);
+        IRestBase RemoveAuthenticator();
+        IAuthenticator GetAuthenticator();
 
         Task<RestResponse<T>> GetAsync<T>() where T : class;
         Task<IResponse> GetAsync();

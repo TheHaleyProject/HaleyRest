@@ -28,7 +28,6 @@ namespace Haley.Abstractions
     {
         //IClient Client { get; } //Should be set only once
         IRequest SetClient(IClient client);
-        IRequest InheritHeaders();
-        IRequest InheritAuthentication(); //Give preference to Authenticator to generate a new token. If authenticator is not available, take the parent token.
+        
     }
 }

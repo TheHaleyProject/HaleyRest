@@ -39,8 +39,7 @@ namespace Haley.Models
         #region Attributes
         string _boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
         CancellationToken? _cancellation_token = null;
-        bool _inherit_headers = false;
-        bool _inherit_authentication = false;
+    
        
         public IClient Client { get; private set; }
         #endregion
@@ -81,17 +80,6 @@ namespace Haley.Models
             this.Client = client;
             return this;
         }
-
-        public IRequest InheritHeaders() {
-            _inherit_headers = true;
-            return this;
-        }
-
-        public IRequest InheritAuthentication() {
-            _inherit_authentication = true;
-            return this;
-        }
-
         public override IRestBase WithEndPoint(string resource_url_endpoint) {
             URL = ParseURI(resource_url_endpoint).pathQuery; //What if we needed to use full URL?
             return this;
@@ -129,7 +117,7 @@ namespace Haley.Models
             if (URL == null) URL = string.Empty;
             if (_request != null) {
                 //Prio 1 : If request is available.
-                return await ExecuteAsync(_request);
+                return await SendAsync(_request);
             } else if(_content != null) {
                 //Prio 2 : If content is availble without request.
                 return await SendAsync(_content, method);
@@ -148,15 +136,17 @@ namespace Haley.Models
 
         #region Send Methods
 
-        private string GetAuthToken(IAuthenticator authenticator) {
+        private string GetAuthValue(IRestBase source,HttpRequestMessage request) {
             string result = string.Empty;
-            if(authenticator is OAuth1Authenticator oauth1) {
-                //Assuming that the 
-            } else if (authenticator is TokenAuthenticator tokenauth) {
-                result = tokenauth.GetToken(); //Assuming that the token is set already.
+            var authenticator = source.GetAuthenticator();
+            if(authenticator != null) {
+                result = authenticator.GenerateToken(request); //For oauth we need to sign the items.
+            } else if (source is RestRequest res_req && res_req._inherit_authentication && res_req.Client != null) {
+                result = GetAuthValue(res_req.Client,request);
             }
             return result;
         }
+
         async Task<IResponse> SendAsync(HttpContent content, Method method) {
 
             WriteLog(LogLevel.Information, $@"Initiating a {method} request to {URL} with base url {Client.URL}");
@@ -186,26 +176,22 @@ namespace Haley.Models
                 resource_Url = URL; //Take the full url, irrespective of whatever is provided, assuming that the URL is absolute.
             }
 
-            var request = new HttpRequestMessage(request_method, resource_Url);
-            if (content != null) request.Content = content; //Set content if not null
+            //SET REQUEST PROPERTY VALUE
+            _request = new HttpRequestMessage(request_method, resource_Url);
+            if (content != null) _request.Content = content; //Set content if not null
 
             #region Authentication and Headers
+            var _headers = GetHeaders();
+            if (_inherit_headers) {
+                var _parentHeaders = Client?.GetHeaders();
+                //Update values from here onto the _headers
 
-            if (_authenticator != null) {
-                //Use this authenticator to generate token.
-                
-            }
-            //If the request has some kind of request headers, then add them.
-            if (!string.IsNullOrWhiteSpace(request_token)) {
-                request.Headers.Authorization = new AuthenticationHeaderValue(request_token); //if the input is not correct, for instance, token has space, then it will throw exception. Add without validation.
-                //request.Headers.TryAddWithoutValidation("Authorization", request_token);
             }
 
-            //Add other request headers if available.
-            if (GetHeaders != null && _requestHeaders?.Count > 0) {
-                foreach (var kvp in _requestHeaders) {
+            if (_headers?.Count > 0) {
+                foreach (var kvp in _headers) {
                     try {
-                        request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value); //Do not validate.
+                        _request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value); //Do not validate.
                     }
                     catch (Exception ex) {
                         WriteLog(LogLevel.Debug, new EventId(2001, "Header Error"), "Error while trying to add a header", ex);
@@ -213,27 +199,24 @@ namespace Haley.Models
                 }
             }
 
+            //Finally add auth header
+            //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
+            if (_request.Headers.Contains(RestConstants.Headers.Authorization)) {
+                _request.Headers.Remove(RestConstants.Headers.Authorization);
+            }
+            _request.Headers.TryAddWithoutValidation(RestConstants.Headers.Authorization, GetAuthValue(this, _request));
+
             #endregion
 
-
-            RestResponse result = new StringResponse();
-            var _response = await SendAsync(request);
-            _response.CopyTo(result); //Copy base value.
-            //Response we receive will be base response.
-            if (_response.IsSuccessStatusCode) {
-                var _cntnt = _response.Content;
-                var _strCntnt = await _cntnt.ReadAsStringAsync();
-                result.Content = _strCntnt;
-
-            }
+            var result = await SendAsync(method);
             return result; //All calls from here will receive stringResponse content.
         }
-        internal async Task<IResponse> ExecuteAsync(HttpRequestMessage request, CancellationToken cancellation_token) {
+        internal async Task<IResponse> SendAsync(HttpRequestMessage request, CancellationToken cancellation_token) {
             this._cancellation_token = cancellation_token;
-            return await ExecuteAsync(request);
+            return await SendAsync(request);
         }
 
-        internal async Task<IResponse> ExecuteAsync(HttpRequestMessage request) {
+        internal async Task<IResponse> SendAsync(HttpRequestMessage request) {
             this._request = request;
             ValidateClient();
             var _validationCB = Client.GetRequestValidation();
@@ -399,7 +382,7 @@ namespace Haley.Models
                 //For more than one add as form data.
                 MultipartFormDataContent form_content = new MultipartFormDataContent();
                 form_content.Headers.Remove("Content-Type");
-                form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + boundary);
+                form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + _boundary);
 
                 foreach (var item in formbody.Value) {
                     if (item.Value == null) continue;

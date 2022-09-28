@@ -33,8 +33,11 @@ namespace Haley.Models
     {
         public string Id { get; }
         public string URL { get; protected set; }
-        protected IAuthenticator _authenticator;
+        IAuthenticator _authenticator;
         protected ConcurrentDictionary<Type, JsonConverter> _jsonConverters = new ConcurrentDictionary<Type, JsonConverter>();
+        protected bool _inherit_headers = false;
+        protected bool _inherit_authentication = false;
+        
         #region Attributes
         ILogger _logger;
         ConcurrentDictionary<string, IEnumerable<string>> _headers = new ConcurrentDictionary<string, IEnumerable<string>>();
@@ -45,6 +48,9 @@ namespace Haley.Models
         {
             Id = Guid.NewGuid().ToString();
             URL = url;
+            //On creation add default request headers.
+            ResetHeaders();
+            AddDefaultHeaders();
         }
         protected RestBase():this(string.Empty) { }
         #endregion
@@ -86,7 +92,7 @@ namespace Haley.Models
         }
         public virtual IRestBase ResetHeaders() {
             WriteLog(LogLevel.Debug, "Clear all headers");
-            _headers.Clear();
+            _headers?.Clear();
             return this;
         }
         public IRestBase ResetHeaders(Dictionary<string, IEnumerable<string>> reset_values) {
@@ -123,10 +129,28 @@ namespace Haley.Models
             _authenticator = null;
             return this;
         }
+        public IAuthenticator GetAuthenticator() {
+            return _authenticator;
+
+        }
+        public IRestBase RemoveAuthenticator() {
+            _authenticator = null;
+            return this;
+        }
         public IRestBase SetAuthenticator(IAuthenticator authenticator) {
             _authenticator = authenticator;
             return this;
         }
+        public IRestBase InheritHeaders(bool inherit = true) {
+            _inherit_headers = inherit;
+            return this;
+        }
+
+        public IRestBase InheritAuthentication(bool inherit = true) {
+            _inherit_authentication = inherit;
+            return this;
+        }
+
         #endregion
 
         #region Helpers

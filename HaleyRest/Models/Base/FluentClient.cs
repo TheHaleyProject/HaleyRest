@@ -60,7 +60,7 @@ namespace Haley.Models
         }
         public FluentClient(string base_address, string friendly_name,ILogger logger) : this(base_address, friendly_name,null,logger) { }
         public FluentClient(string base_address, ILogger logger) : this(base_address, base_address, null,logger) { }
-        public FluentClient(ILogger logger) : this(string.Empty, "Fluent Client", logger) { }
+        public FluentClient(string base_address) : this(base_address, "Fluent Client", null) { }
         public FluentClient() : this(string.Empty, "Fluent Client", null) { }
 
         #endregion
@@ -76,59 +76,59 @@ namespace Haley.Models
         }
 
         public override IRestBase WithEndPoint(string resource_url_endpoint) {
-            return new RestRequest().WithEndPoint(resource_url_endpoint);
+            return new RestRequest().SetClient(this).WithEndPoint(resource_url_endpoint);
             //Method chaining will ensure that the subsequent calls are made to the restrequest and not to this client as we are returning a rest request here..
         }
 
         public override IRestBase AddCancellationToken(CancellationToken cancellation_token) {
-            return new RestRequest().AddCancellationToken(cancellation_token);
+            return new RestRequest().SetClient(this).AddCancellationToken(cancellation_token);
         }
        
         public override IRestBase WithParameter(RequestObject param) {
-            return new RestRequest().WithParameter(param);
+            return new RestRequest().SetClient(this).WithParameter(param);
         }
 
         public override IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type) {
-            return new RestRequest().WithBody(content, is_serialized, content_type);
+            return new RestRequest().SetClient(this).WithBody(content, is_serialized, content_type);
         }
 
         public override IRestBase WithParameters(IEnumerable<RequestObject> parameters) {
-            return new RestRequest().WithParameters(parameters);
+            return new RestRequest().SetClient(this).WithParameters(parameters);
         }
 
         public override IRestBase WithContent(HttpContent content) {
-            return new RestRequest().WithContent(content);
+            return new RestRequest().SetClient(this).WithContent(content);
         }
         public override IRestBase WithQuery(QueryParam param) {
-            return new RestRequest().WithQuery(param);
+            return new RestRequest().SetClient(this).WithQuery(param);
         }
 
         public override IRestBase WithQueries(IEnumerable<QueryParam> parameters) {
-            return new RestRequest().WithQueries(parameters);
+            return new RestRequest().SetClient(this).WithQueries(parameters);
         }
 
         public override async Task<RestResponse<T>> GetAsync<T>() {
-            return await new RestRequest().GetAsync<T>();
+            return await new RestRequest().SetClient(this).GetAsync<T>();
         }
 
         public override async Task<IResponse> GetAsync() {
-            return await new RestRequest().GetAsync();
+            return await new RestRequest().SetClient(this).GetAsync();
         }
 
         public override async Task<IResponse> PostAsync() {
-            return await new RestRequest().PostAsync();
+            return await new RestRequest().SetClient(this).PostAsync();
         }
 
         public override async Task<IResponse> PutAsync() {
-            return await new RestRequest().PutAsync();
+            return await new RestRequest().SetClient(this).PutAsync();
         }
 
         public override async Task<IResponse> DeleteAsync() {
-            return await new RestRequest().DeleteAsync();
+            return await new RestRequest().SetClient(this).DeleteAsync();
         }
 
         public override async Task<IResponse> SendAsync(Method method) {
-            return await new RestRequest().SendAsync(method);
+            return await new RestRequest().SetClient(this).SendAsync(method);
         }
 
         public IClient WithRequestValidation(Func<HttpRequestMessage, Task<bool>> validationCallBack) {
@@ -140,8 +140,10 @@ namespace Haley.Models
             return _request_validation_cb;
         }
 
-        public async Task<IResponse> ExecuteAsync(HttpRequestMessage request) {
-            return await new RestRequest().ExecuteAsync(request);
+        public async Task<IResponse> SendAsync(HttpRequestMessage request) {
+            //IRequest has no SendAsync but RestRequest has the sendAsync
+
+            return await ((new RestRequest().SetClient(this)) as RestRequest).SendAsync(request);
         }
     }
 }

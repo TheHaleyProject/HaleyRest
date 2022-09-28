@@ -21,7 +21,8 @@ namespace Haley.Utils
 {
     public class TokenAuthenticator : IAuthenticator{
         private string _token = string.Empty;
-        public string GetToken() {
+        public string GenerateToken(HttpRequestMessage request) {
+            //For jwt we dont' do anythign with the request.
             return _token;
         }
         public void SetToken(string token, string token_prefix) {
@@ -30,6 +31,7 @@ namespace Haley.Utils
             _token = string.Concat(token_prefix ?? "", " ", token);
             _token = _token.Trim();
         }
+        
         public TokenAuthenticator() { }
     }
 }
