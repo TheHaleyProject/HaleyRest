@@ -28,6 +28,5 @@ namespace Haley.Abstractions
     {
         //IClient Client { get; } //Should be set only once
         IRequest SetClient(IClient client);
-        
     }
 }

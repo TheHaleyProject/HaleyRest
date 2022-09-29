@@ -39,8 +39,6 @@ namespace Haley.Models
         #region Attributes
         string _boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
         CancellationToken? _cancellation_token = null;
-    
-       
         public IClient Client { get; private set; }
         #endregion
 
@@ -137,14 +135,29 @@ namespace Haley.Models
         #region Send Methods
 
         private string GetAuthValue(IRestBase source,HttpRequestMessage request) {
-            string result = string.Empty;
+            var authenticator = FetchAuthenticator(this);
+            var authparam = FetchAuthParam(this);
+            return authenticator?.GenerateToken(this.Client?.BaseClient?.BaseAddress, request, authparam) ?? String.Empty;
+        }
+
+        private IAuthenticator FetchAuthenticator(IRestBase source) {
             var authenticator = source.GetAuthenticator();
-            if(authenticator != null) {
-                result = authenticator.GenerateToken(request); //For oauth we need to sign the items.
+            if (authenticator != null) {
+                return authenticator;
             } else if (source is RestRequest res_req && res_req._inherit_authentication && res_req.Client != null) {
-                result = GetAuthValue(res_req.Client,request);
+                return FetchAuthenticator(res_req.Client);
             }
-            return result;
+            return null;
+        }
+
+        private object FetchAuthParam(IRestBase source) {
+            var param = source.GetAuthParam();
+            if (param != null) {
+                return param;
+            } else if (source is RestRequest res_req && res_req._inherit_auth_param && res_req.Client != null) {
+                return FetchAuthParam(res_req.Client);
+            }
+            return null;
         }
 
         async Task<IResponse> SendAsync(HttpContent content, Method method) {
@@ -200,10 +213,11 @@ namespace Haley.Models
             }
 
             //Finally add auth header
-            //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
+            
             if (_request.Headers.Contains(RestConstants.Headers.Authorization)) {
                 _request.Headers.Remove(RestConstants.Headers.Authorization);
             }
+            //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
             _request.Headers.TryAddWithoutValidation(RestConstants.Headers.Authorization, GetAuthValue(this, _request));
 
             #endregion

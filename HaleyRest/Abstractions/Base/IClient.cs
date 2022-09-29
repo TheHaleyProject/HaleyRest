@@ -35,6 +35,11 @@ namespace Haley.Abstractions
         Func<HttpRequestMessage, Task<bool>> GetRequestValidation();
         //A request should contain a client. We cannot directly use a request to execute this. If client is not present, then we cannot execute. So, let this be a client side call.
         Task<IResponse> SendAsync(HttpRequestMessage request);
+        /// <summary>
+        /// Creates an empty request
+        /// </summary>
+        /// <returns></returns>
+        IRestBase CreateRequest();
         IClient UpdateFriendlyName(string friendlyName);
     }
 }

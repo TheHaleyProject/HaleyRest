@@ -29,7 +29,7 @@ namespace Haley.Abstractions
         string Id { get; }
         string URL { get; }
         IRestBase InheritHeaders(bool inherit = true);
-        IRestBase InheritAuthentication(bool inherit = true); //Give preference to Authenticator to generate a new token. If authenticator is not available, take the parent token.
+        IRestBase InheritAuthentication(bool inherit_authenticator = true,bool inherit_parameter = true); //Give preference to Authenticator to generate a new token. If authenticator is not available, take the parent token.
         IRestBase SetLogger(ILogger logger);
         IRestBase ResetHeaders();
         IRestBase ResetHeaders(Dictionary<string, IEnumerable<string>> reset_values);
@@ -50,8 +50,9 @@ namespace Haley.Abstractions
         IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type);
         IRestBase SetAuthenticator(IAuthenticator authenticator);
         IRestBase RemoveAuthenticator();
+        IRestBase SetAuthParam(object auth_param);
         IAuthenticator GetAuthenticator();
-
+        object GetAuthParam();
         Task<RestResponse<T>> GetAsync<T>() where T : class;
         Task<IResponse> GetAsync();
         Task<IResponse> PostAsync();

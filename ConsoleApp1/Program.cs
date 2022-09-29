@@ -33,8 +33,8 @@ namespace ConsoleApp1
                 var _res3 = await client.SendAsync(Haley.Enums.Method.POST);
                 var _res2 = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/"));
 
-                client.SetAuthenticator(new Haley.Utils.OAuth1Authenticator("4579bfc5-0671-4087-bed3-00a41b5cff8c", "f292-3177-e0b1-22ae-e253-5bfd-dbec-84d5"));
-                var _res4 = await client.WithEndPoint($@"oauth/request_token").InheritAuthentication().SendAsync(Haley.Enums.Method.POST);
+                client.SetAuthenticator(new Haley.Utils.OAuth1Authenticator("4579bfc5-0671-4087-bed3-00a41b5cff8c", "f292-3177-e0b1-22ae-e253-5bfd-dbec-84d5")); //Set for all 
+                var _res4 = await client.WithEndPoint($@"oauth/request_token").InheritAuthentication().SetAuthParam(new OAuth1TokenParam() {RequestType = OAuthRequestType.RequestToken}).SendAsync(Haley.Enums.Method.POST);
 
                 //var authheader = new Haley.Utils.OAuth1Authenticator().GetAuthorizationHeader(new OAuthToken("4579bfc5-0671-4087-bed3-00a41b5cff8c", "f292-3177-e0b1-22ae-e253-5bfd-dbec-84d5"), OAuthRequestType.RequestToken,new OAuthRequest() { Method = Haley.Enums.Method.POST,RequestURL = $@"https://daep.withbc.com/oauth/request_token" });
                 ////client.AddRequestAuthentication("oauth_consumer_key=\"4579bfc5-0671-4087-bed3-00a41b5cff8c\",oauth_signature_method=\"HMAC-SHA1\",oauth_timestamp=\"1663965208\",oauth_nonce=\"sxxdWnS82RP\",oauth_version=\"1.0\",oauth_signature=\"zEJeuzHEeeLp9HK7pZ%2FERcWItvI%3D\"", "OAuth");

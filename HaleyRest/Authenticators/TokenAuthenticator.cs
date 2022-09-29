@@ -21,15 +21,26 @@ namespace Haley.Utils
 {
     public class TokenAuthenticator : IAuthenticator{
         private string _token = string.Empty;
-        public string GenerateToken(HttpRequestMessage request) {
+        private string _token_prefix = "Bearer";
+        public string GenerateToken(Uri baseuri, HttpRequestMessage request,object param) {
+            //Param will override the prefix.
+            var _prefix = _token_prefix;
+            if (param != null && param is string prefstr) {
+                _prefix = prefstr;
+            }
             //For jwt we dont' do anythign with the request.
-            return _token;
+            return GetToken(_prefix);
         }
+
         public void SetToken(string token, string token_prefix) {
             if (token == null) throw new ArgumentNullException(nameof(token));
+            _token = token;
+            _token_prefix = token_prefix;
+        }
 
-            _token = string.Concat(token_prefix ?? "", " ", token);
-            _token = _token.Trim();
+        private string GetToken(string prefix) {
+            var result = string.Concat(prefix ?? string.Empty, " ", _token ?? string.Empty);
+            return result.Trim();
         }
         
         public TokenAuthenticator() { }

@@ -19,6 +19,6 @@ namespace Haley.Abstractions
     /// </list>
     /// </summary>
     public interface IAuthenticator{
-        string GenerateToken(HttpRequestMessage request);
+        string GenerateToken(Uri baseuri, HttpRequestMessage request,object param);
     }
 }
