@@ -61,18 +61,30 @@ namespace Haley.Utils
                 RequestType = OAuthRequestType.ForProtectedResource,
             };
 
-            tokenParam.RequestURL = new Uri(baseuri ,request.RequestUri).ToString();
+            tokenParam.RequestURL = new Uri(baseuri, request.RequestUri);
             tokenParam.Method = request.Method;
-            tokenParam.Parameters = new SortedDictionary<string, string>(request.Headers.ToDictionary(p => p.Key, q => string.Join(";", q.Value))); //Since header is supposed to have Ienumerable<string> as value.
+            FillQueryParam(request,ref tokenParam);
             //We use the request to fetch the headers and body before processing.
             return GetAuthorizationHeader(Token,tokenParam);
         }
 
+        private void FillQueryParam(HttpRequestMessage request,ref OAuth1TokenParam param) {
+            param.QueryParams = new Dictionary<string, string>(); //to ensure it is not null.
+            //TODO:
+            //Get all queries from the URL and add it to the list.
+
+        }
+
         public string GetAuthorizationHeader(OAuth1Token tokeninfo, OAuth1TokenParam tokenParam) {
             ValidateInputs(tokeninfo, tokenParam);
+            RestParamList paramlist = new RestParamList();
+
             var headerParams = GenerateHeaderParams(tokeninfo, tokenParam);
-            var basestring = GenerateBaseString(headerParams, tokeninfo, tokenParam);
-            var signature = GenerateSignature(tokeninfo, basestring);
+            paramlist.AddDictionary(headerParams); //Add all headers.
+            paramlist.AddDictionary(tokenParam?.QueryParams); //Add all queries with values.
+
+            var basestring = GenerateBaseString(paramlist, tokeninfo, tokenParam);
+            var signature = NetUtils.UrlEncodeRelaxed(GenerateSignature(tokeninfo, basestring));
             headerParams.Add(RestConstants.OAuth.Signature, signature);
             return WriteAuthHeader(headerParams, tokeninfo.Prefix);
         }
@@ -85,7 +97,7 @@ namespace Haley.Utils
             if (tokeninfo.Secret == null) throw new ArgumentNullException(nameof(OAuth1Token.Secret));
             if (string.IsNullOrWhiteSpace(tokeninfo.Secret.ConsumerKey)) throw new ArgumentNullException(nameof(OAuth1Token.Secret.ConsumerKey));
             if (string.IsNullOrWhiteSpace(tokeninfo.Secret.ConsumerSecret)) throw new ArgumentNullException(nameof(OAuth1Token.Secret.ConsumerSecret));
-            if (string.IsNullOrWhiteSpace(tokenParam?.RequestURL)) throw new ArgumentNullException(nameof(OAuth1TokenParam.RequestURL));
+            if (string.IsNullOrWhiteSpace(tokenParam?.RequestURL?.ToString())) throw new ArgumentNullException(nameof(OAuth1TokenParam.RequestURL));
 
             switch (tokenParam.RequestType) {
                 case OAuthRequestType.AccessToken:
@@ -108,8 +120,8 @@ namespace Haley.Utils
             return sb.ToString();
         }
         private string GenerateHash(string input,HashAlgorithm algorithm) {
-            //var byteArray = Encoding.UTF8.GetBytes(input);
-            var byteArray = Encoding.ASCII.GetBytes(input);
+            var byteArray = Encoding.UTF8.GetBytes(input);
+            //var byteArray = Encoding.ASCII.GetBytes(input);
             var hash = algorithm.ComputeHash(byteArray); //algo will already contain the key required.
             return Convert.ToBase64String(hash);
         }
@@ -130,8 +142,8 @@ namespace Haley.Utils
             switch (tokeninfo.SignatureType) {
                 case SignatureType.HMACSHA1:
                     var hmac = new HMACSHA1();
-                    //hmac.Key = Encoding.UTF8.GetBytes(_key); //Key as a byte array
-                    hmac.Key = Encoding.ASCII.GetBytes(_key); //Key as a byte array
+                    hmac.Key = Encoding.UTF8.GetBytes(_key); //Key as a byte array
+                    //hmac.Key = Encoding.ASCII.GetBytes(_key); //Key as a byte array
                     result = GenerateHash(base_string, hmac);
                     break;
                 case SignatureType.HMACSHA256:
@@ -143,36 +155,31 @@ namespace Haley.Utils
                 default:
                     break;
             }
-            return Uri.EscapeDataString(result);
+            return result;
         }
 
-        private string GenerateBaseString(Dictionary<string,string> dic, OAuth1Token tokeninfo,OAuth1TokenParam tokenpparam) {
+        private string GenerateBaseString(RestParamList paramList, OAuth1Token tokeninfo,OAuth1TokenParam tokenparam) {
             //Concatenate all the header params to generate the base string that will be signed in next steps.
 
             //1.HTTP Method name followed by ampersand
-            StringBuilder sb = new StringBuilder(tokenpparam.Method.ToString().ToUpper()); //Get the HTTP Method name
+            StringBuilder sb = new StringBuilder(tokenparam.Method.ToString().ToUpper()); //Get the HTTP Method name
             sb.Append("&");
 
             //2. Reqeust URL (percent encoded) followed by ampersand
-            sb.Append(Uri.EscapeDataString(new Uri(tokenpparam.RequestURL).AbsoluteUri)); //can also directly give the string.
+            sb.Append(NetUtils.UrlEncodeRelaxed(NetUtils.ConstructRequestUrl(tokenparam.RequestURL))); //can also directly give the string.
             sb.Append("&");
 
             //3. Append other parameters alphabetically. (Ensure all values have some value)
-            var i = 1;
-            foreach (var item in dic) {
-                sb.Append(Uri.EscapeDataString($@"{item.Key.ToLower()}={item.Value}"));
-                if (i < dic.Count) sb.Append("&");
-                i++;
-            }
+            sb.Append(NetUtils.UrlEncodeRelaxed(paramList.GetConcatenatedString(encodevalues:true,strictencodekvp:true))); //Get concated string of the params (to do : url encoding)
             return sb.ToString();
         }
 
-        private Dictionary<string, string> GenerateHeaderParams(OAuth1Token tokeninfo, OAuth1TokenParam tokenpparam) {
+        private Dictionary<string, string> GenerateHeaderParams(OAuth1Token tokeninfo, OAuth1TokenParam tokenparam) {
             var unixtimestamp = NetUtils.GetTimeStamp();
             var nonce = NetUtils.GetNonce(32);
 
+            //SIGNATURE SHOULD NOT BE GENERATED HERE.
             SortedDictionary<string, string> result = new SortedDictionary<string, string>(); //Sorted information is mandatory
-
             //Mandatory
             result.Add(RestConstants.OAuth.ConsumerKey, tokeninfo.Secret.ConsumerKey);
             result.Add(RestConstants.OAuth.Nonce, nonce);
@@ -181,21 +188,21 @@ namespace Haley.Utils
             result.Add(RestConstants.OAuth.Version, tokeninfo.Version);
 
             //Optional
-            if (!string.IsNullOrWhiteSpace(tokenpparam.Verifier)) {
-                result.Add(RestConstants.OAuth.Verifier, tokenpparam.Verifier);
+            if (!string.IsNullOrWhiteSpace(tokenparam.Verifier)) {
+                result.Add(RestConstants.OAuth.Verifier, tokenparam.Verifier);
             }
 
-            if (!string.IsNullOrWhiteSpace(tokenpparam.CallBackURL)) {
-                result.Add(RestConstants.OAuth.Callback, tokenpparam.CallBackURL);
+            if (!string.IsNullOrWhiteSpace(tokenparam.CallBackURL?.ToString())) {
+                result.Add(RestConstants.OAuth.Callback, tokenparam.CallBackURL.ToString());
             }
 
-            if (!string.IsNullOrWhiteSpace(tokenpparam.SessionHandle)) {
-                result.Add(RestConstants.OAuth.SessionHandle, tokenpparam.SessionHandle);
+            if (!string.IsNullOrWhiteSpace(tokenparam.SessionHandle)) {
+                result.Add(RestConstants.OAuth.SessionHandle, tokenparam.SessionHandle);
             }
 
             //Type based
 
-            switch (tokenpparam.RequestType) {
+            switch (tokenparam.RequestType) {
                 case OAuthRequestType.AccessToken:
                     result.Add(RestConstants.OAuth.Token, tokeninfo.Secret.TokenKey);
                     break;
@@ -205,6 +212,7 @@ namespace Haley.Utils
             return result.ToDictionary(p=> p.Key, p=> p.Value);
         }
 
+      
         #endregion
     }
 }

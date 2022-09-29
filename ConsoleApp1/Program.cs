@@ -14,6 +14,8 @@ using System.Net.Http;
 using RestSharp;
 using RestSharp.Authenticators;
 using Microsoft.Extensions.Logging;
+using static System.Net.WebRequestMethods;
+using System.Security.Cryptography;
 
 namespace ConsoleApp1
 {
@@ -21,10 +23,41 @@ namespace ConsoleApp1
     {
         static void Main(string[] args) {
             Console.WriteLine("Hello, World!");
+            //string test = $@"23452352@#$%^&*@!%!&";
+            //Console.WriteLine($@"Actual - {test}");
+            //var URIEscapted = Uri.EscapeUriString(test);
+            //var DataEscaped = Uri.EscapeDataString(test);
+            //Console.WriteLine($@"URI Escaped - {URIEscapted}");
+            //Console.WriteLine($@"DATA Escaped - {DataEscaped}");
+            //Console.WriteLine($@"URI DOUBLE Escaped - {Uri.EscapeUriString(URIEscapted)}");
+            //Console.WriteLine($@"DATA DOUBLE Escaped - {Uri.EscapeDataString(DataEscaped)}");
             var res1 = CallMethod().Result;
-            var res2 = RestSharpCall().Result;
+            //var res3 = DirectHTTPCall().Result;
+            //var res2 = RestSharpCall().Result;
         }
+        static async Task<bool> DirectHTTPCall() {
 
+            var clientHandler = new HttpClientHandler {
+                //UseCookies = false,
+            };
+
+            var client = new HttpClient(clientHandler);
+            var request = new HttpRequestMessage {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri("https://daep.withbc.com/oauth/request_token"),
+                Headers =
+                {
+                    //{ "cookie", $@"awesome_cookie=1663577011.57" },
+                    { "Authorization", $@"OAuth oauth_consumer_key=""4579bfc5-0671-4087-bed3-00a41b5cff8c"", oauth_nonce=""6bfeyvo1QBahRF2kDs7YtNgJYiE1sSyM"", oauth_signature=""YCDXRzyhAsA%2BVnyu7j%2FLGkoTm0Q%3D"", oauth_signature_method=""HMAC-SHA1"", oauth_timestamp=""1664431675"", oauth_version=""1.0""" },
+                }
+            };
+            using (var response = await client.SendAsync(request)) {
+                response.EnsureSuccessStatusCode();
+                var body = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(body);
+            }
+            return true;
+        }
         static async Task<bool> CallMethod() {
             try {
                 var client = new FluentClient($@"https://daep.withbc.com");

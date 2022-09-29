@@ -8,24 +8,19 @@ using System.Text;
 
 namespace Haley.Utils {
     public static class RequestParamExtensions {
-        public static  IEnumerable<QueryParam> ToRequestParams(this Dictionary<string,string> parameters, bool encodeKVP) {
+        public static  IEnumerable<QueryParam> ToRequestParams(this Dictionary<string,string> parameters) {
             List<QueryParam> result = new List<QueryParam>();
             if (parameters == null) return result;
             foreach (var kvp in parameters) {
-                result.Add(kvp.ToRequestParam(encodeKVP));
+                result.Add(kvp.ToRequestParam());
             }
             return result;
         }
 
-        public static QueryParam ToRequestParam(this KeyValuePair<string,string> kvp, bool encodeKVP) {
+        public static QueryParam ToRequestParam(this KeyValuePair<string,string> kvp) {
             if (string.IsNullOrWhiteSpace(kvp.Key)) return null;
             var data = kvp.Value;
-            var key = kvp.Key;
-            if (encodeKVP && !string.IsNullOrWhiteSpace(data)) {
-                data = Uri.EscapeDataString(data);
-                key = Uri.EscapeDataString(key);
-            }
-            return new QueryParam(key, data);
+            return new QueryParam(kvp.Key, kvp.Value);
         }
 
         public static IEnumerable<QueryParam> RemoveNulls(this IEnumerable<QueryParam> parameters) {
