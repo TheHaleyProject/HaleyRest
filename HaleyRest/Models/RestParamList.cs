@@ -50,12 +50,12 @@ namespace Haley.Models {
         public RestParamList(IEnumerable<RestParam> @params) {
             AddRange(@params);
         }
-        public RestParamList(NameValueCollection @params) {
-            AddCollection(@params);
+        public RestParamList(NameValueCollection @params,bool can_encode_value= true,bool kvp_encodestrict = true) {
+            AddCollection(@params,can_encode_value,kvp_encodestrict);
         }
 
-        public RestParamList(Dictionary<string, string> @params) {
-            this.AddDictionary(@params);
+        public RestParamList(Dictionary<string, string> @params,bool can_encode_value = true, bool kvp_encodestrict = true) {
+            this.AddDictionary(@params,can_encode_value,kvp_encodestrict);
         }
         #endregion
 
@@ -65,18 +65,22 @@ namespace Haley.Models {
             if (@params == null) return;
             base.AddRange(@params);
         }
-        public void AddCollection(NameValueCollection @params) {
+        public void AddCollection(NameValueCollection @params,bool can_encode_value=true, bool kvp_encodestrict = true) {
             if (@params == null) return;
             foreach (var key in @params.AllKeys) {
-                var param = new RestParam(key, @params[key]);
+                var _key = kvp_encodestrict ? NetUtils.UrlEncodeStrict(key):key;
+                var _value = kvp_encodestrict ? NetUtils.UrlEncodeStrict(@params[key]) : @params[key];
+                var param = new RestParam(_key,_value) {CanEncodeValue = can_encode_value };
                 base.Add(param);
             }
         }
 
-        public void AddDictionary(IDictionary<string, string> @params) {
+        public void AddDictionary(IDictionary<string, string> @params,bool can_encode_value= true, bool kvp_encodestrict = true) {
             if (@params == null) return;
             foreach (var item in @params) {
-                var param = new RestParam(item.Key, item.Value);
+                var _key = kvp_encodestrict ? NetUtils.UrlEncodeStrict(item.Key) : item.Key;
+                var _value = kvp_encodestrict ? NetUtils.UrlEncodeStrict(item.Value) : item.Value;
+                var param = new RestParam(_key, _value) { CanEncodeValue = can_encode_value };
                 base.Add(param);
             }
         }
@@ -85,17 +89,13 @@ namespace Haley.Models {
             this.Sort((item1, item2) => item1.Key.CompareTo(item2.Key));
         }
 
-        public string GetConcatenatedString(string splitter = "&", string kvp_merger = "=", bool should_sort = true,bool strictencodekvp = true, bool encodevalues = true) {
+        public string GetConcatenatedString(string splitter = "&", string kvp_merger = "=", bool should_sort = true, bool encodevalues = true) {
             var baseArr = new RestParam[this.Count()];
             this.CopyTo(baseArr);
             var copiedList = baseArr.ToList();
-            var workinglist = copiedList;
-            if (strictencodekvp) {
-                workinglist = copiedList.Select(p => new RestParam(NetUtils.UrlEncodeStrict(p.Key), NetUtils.UrlEncodeStrict(p.Value))).ToList();
-            }
 
             if (should_sort) {
-                workinglist.Sort((item1, item2) => item1.Key.CompareTo(item2.Key)); //Compare the keys to sort. //Still this keep hello100 as small than hello2. Need to optimize later to use better way to compre alphanumeric values (check haley utils alphanumeric comparer).
+                copiedList.Sort((item1, item2) => item1.Key.CompareTo(item2.Key)); //Compare the keys to sort. //Still this keep hello100 as small than hello2. Need to optimize later to use better way to compre alphanumeric values (check haley utils alphanumeric comparer).
             }
 
             StringBuilder sb = new StringBuilder();
@@ -104,8 +104,11 @@ namespace Haley.Models {
             foreach (var item in copiedList) {
                 sb.Append(item.Key);
                 sb.Append(kvp_merger);
-                if (!encodevalues) {
+                if (encodevalues && item.CanEncodeValue) {
                     sb.Append(NetUtils.UrlEncodeRelaxed(item.Value));
+                }
+                else {
+                    sb.Append(item.Value);
                 }
                 sb.Append(item.Value);
 
@@ -114,7 +117,6 @@ namespace Haley.Models {
                     sb.Append(splitter);
                 }
             }
-
             return sb.ToString();
         }
         #endregion

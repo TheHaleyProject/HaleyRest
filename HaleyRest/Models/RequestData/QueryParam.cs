@@ -12,11 +12,10 @@ namespace Haley.Models
     {
         public string Key { get; set; }
         public new string Value => base.Value as string; //Hiding the base Value.
-        public bool ShouldEncode { get; set; }
-        public bool IsEncoded { get; private set; }
+        public bool CanEncode { get; private set; }
 
         public void SetEncoded() {
-            if (!IsEncoded) IsEncoded = true; //Set only once. Cannot encode or change it again back to false.
+            CanEncode = false; //Set only once. Cannot encode or change it again back to true.
         }
 
         /// <summary>
@@ -26,11 +25,10 @@ namespace Haley.Models
         /// </param>
         /// <param name="value"></param>
         /// <param name="is_serialized"></param>
-        public QueryParam(string key, string value,bool should_encode = true):base (value)
+        public QueryParam(string key, string value):base (value)
         {
             Key = string.IsNullOrWhiteSpace(key)?"id":key;
-            ShouldEncode = should_encode; //By default, the query parameters are encoded
-            IsEncoded = false;
+            CanEncode = true; //By default, the query parameters are encoded
         }
     }
 }

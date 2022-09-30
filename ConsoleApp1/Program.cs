@@ -31,9 +31,9 @@ namespace ConsoleApp1
             //Console.WriteLine($@"DATA Escaped - {DataEscaped}");
             //Console.WriteLine($@"URI DOUBLE Escaped - {Uri.EscapeUriString(URIEscapted)}");
             //Console.WriteLine($@"DATA DOUBLE Escaped - {Uri.EscapeDataString(DataEscaped)}");
-            var res1 = CallMethod().Result;
+            //var res1 = CallMethod().Result;
             //var res3 = DirectHTTPCall().Result;
-            //var res2 = RestSharpCall().Result;
+            var res2 = RestSharpCall().Result;
         }
         static async Task<bool> DirectHTTPCall() {
 

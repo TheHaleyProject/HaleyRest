@@ -80,8 +80,8 @@ namespace Haley.Utils
             RestParamList paramlist = new RestParamList();
 
             var headerParams = GenerateHeaderParams(tokeninfo, tokenParam);
-            paramlist.AddDictionary(headerParams); //Add all headers.
-            paramlist.AddDictionary(tokenParam?.QueryParams); //Add all queries with values.
+            paramlist.AddDictionary(headerParams,kvp_encodestrict:true); //Add all headers.
+            paramlist.AddDictionary(tokenParam?.QueryParams,kvp_encodestrict:true); //Add all queries with values.
 
             var basestring = GenerateBaseString(paramlist, tokeninfo, tokenParam);
             var signature = NetUtils.UrlEncodeRelaxed(GenerateSignature(tokeninfo, basestring));
@@ -170,7 +170,7 @@ namespace Haley.Utils
             sb.Append("&");
 
             //3. Append other parameters alphabetically. (Ensure all values have some value)
-            sb.Append(NetUtils.UrlEncodeRelaxed(paramList.GetConcatenatedString(encodevalues:true,strictencodekvp:true))); //Get concated string of the params (to do : url encoding)
+            sb.Append(NetUtils.UrlEncodeRelaxed(paramList.GetConcatenatedString(encodevalues:true))); //Get concated string of the params (to do : url encoding)
             return sb.ToString();
         }
 

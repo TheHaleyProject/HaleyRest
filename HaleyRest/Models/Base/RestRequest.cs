@@ -317,12 +317,12 @@ namespace Haley.Models
                 var _key = param.Key;
                 var _value = param.Value;
 
-                if (param.ShouldEncode) {
+                if (param.CanEncode) {
                     //Encode before adding
-                    if (!param.IsEncoded) {
-                        _key = Uri.EscapeDataString(_key);
+                    if (param.CanEncode) {
+                        //_key = Uri.EscapeDataString(_key);
                         _value = Uri.EscapeDataString(_value);
-                        param.SetEncoded();
+                        param.SetEncoded(); //cannot encode again, its already encoded
                     }
                 }
                 _query[_key] = _value;
@@ -421,7 +421,5 @@ namespace Haley.Models
         {
             return this.URL;
         }
-
-        
     }
 }

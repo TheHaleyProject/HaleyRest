@@ -35,8 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Haley.Abstractions, Version=1.0.17.0, Culture=neutral, PublicKeyToken=9b5f4902d3fea17a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Haley.Abstractions.1.0.17\lib\netstandard2.0\Haley.Abstractions.dll</HintPath>
+    <Reference Include="Haley.Abstractions, Version=1.0.17.4, Culture=neutral, PublicKeyToken=9b5f4902d3fea17a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Haley.Abstractions.1.0.17.4\lib\netstandard2.0\Haley.Abstractions.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Haley.Extensions, Version=2.0.1.0, Culture=neutral, PublicKeyToken=9b5f4902d3fea17a, processorArchitecture=MSIL">
       <HintPath>..\packages\Haley.Extensions.2.1.12\lib\netstandard2.0\Haley.Extensions.dll</HintPath>
@@ -52,9 +53,6 @@
     </Reference>
     <Reference Include="protobuf-net.Core, Version=3.0.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <HintPath>..\packages\protobuf-net.Core.3.1.17\lib\net461\protobuf-net.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="RestSharp, Version=108.0.2.0, Culture=neutral, PublicKeyToken=598062e77f915f75, processorArchitecture=MSIL">
-      <HintPath>..\packages\RestSharp.108.0.2\lib\netstandard2.0\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
@@ -102,6 +100,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\..\Downloads\RestSharp-dev\RestSharp-dev\src\RestSharp\RestSharp.csproj">
+      <Project>{a34ea9d4-6c58-4eea-a131-8ca630e31871}</Project>
+      <Name>RestSharp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\HaleyHelpers\HaleyHelpers\HaleyHelpers.csproj">
       <Project>{8433a9d8-d485-4f33-8489-a562056d33bb}</Project>
       <Name>HaleyHelpers</Name>

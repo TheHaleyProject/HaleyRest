@@ -21,8 +21,7 @@ using Microsoft.Extensions.Logging;
 namespace Haley.Abstractions
 {
     public interface IEncodeRequest {
-        bool ShouldEncode { get; set; }
-        bool IsEncoded { get; }
+        bool CanEncode { get; }
         void SetEncoded();
     }
 }
