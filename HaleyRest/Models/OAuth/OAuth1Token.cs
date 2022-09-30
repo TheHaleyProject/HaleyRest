@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace Haley.Models {
+
+    //FOLLOWS : https://www.rfc-editor.org/rfc/rfc5849
+
     public class OAuth1Token
     {
         //Tokens can be different for each request , however the consumer_key/secret,token_key/secret will remain the same for different request from same base_url. Assuming this, secret remains the same but token will be different (because it could be a different request URL & request type)

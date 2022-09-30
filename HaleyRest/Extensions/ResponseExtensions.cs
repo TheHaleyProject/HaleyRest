@@ -13,19 +13,19 @@ namespace Haley.Utils {
     {
         public static async Task<StringResponse> AsStringResponse(this IResponse response) {
             if (response is StringResponse) return response as StringResponse;
-            var result = new StringResponse(null).UpdateResponse(response) as StringResponse;
+            var result = new StringResponse(response.OriginalResponse);
             return await result.FetchContent() as StringResponse;
         }
 
         public static async Task<StreamResponse> AsStreamReponse(this IResponse response) {
             if (response is StreamResponse) return response as StreamResponse;
-            var result = new StreamResponse(null).UpdateResponse(response) as StreamResponse;
+            var result = new StreamResponse(response.OriginalResponse);
             return await result.FetchContent() as StreamResponse;
         }
 
         public static async Task<ByteArrayResponse> AsByteArrayResponse(this IResponse response) {
             if (response is ByteArrayResponse) return response as ByteArrayResponse;
-            var result = new ByteArrayResponse(null).UpdateResponse(response) as ByteArrayResponse;
+            var result = new ByteArrayResponse(response.OriginalResponse);
             return await result.FetchContent() as ByteArrayResponse;
         }
     }

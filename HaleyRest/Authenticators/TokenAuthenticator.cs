@@ -32,10 +32,11 @@ namespace Haley.Utils
             return GetToken(_prefix);
         }
 
-        public void SetToken(string token, string token_prefix) {
+        public IAuthenticator SetToken(string token, string token_prefix) {
             if (token == null) throw new ArgumentNullException(nameof(token));
             _token = token;
             _token_prefix = token_prefix;
+            return this;
         }
 
         private string GetToken(string prefix) {

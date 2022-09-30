@@ -6,6 +6,7 @@ using System.Text;
 
 namespace Haley.Models
 {
+    //FOLLOWS : https://www.rfc-editor.org/rfc/rfc5849
     public class OAuthSecret {
         public string ConsumerKey { get; }
         public string ConsumerSecret { get; }

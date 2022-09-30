@@ -18,6 +18,7 @@ namespace Haley.Models
             return this;
         }
         public async Task<RestResponse<T>> FetchContent() {
+            if (base.OriginalContent == null) return this;
             if (typeof(T) == typeof(byte[])) {
                 Content = await base.OriginalContent?.ReadAsByteArrayAsync() as T;
             }

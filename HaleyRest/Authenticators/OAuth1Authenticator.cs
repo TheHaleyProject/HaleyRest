@@ -19,6 +19,14 @@ using Haley.Abstractions;
 
 namespace Haley.Utils
 {
+    //FOLLOWS : https://www.rfc-editor.org/rfc/rfc5849
+
+    //REFERENCES:
+    //https://www.chilkatsoft.com/refdoc/csOAuth1Ref.html
+    //https://help.akana.com/content/current/cm/api_oauth/aaref/Ref_OAuth_AuthorizationHeader_10a.htm
+    //https://developer.twitter.com/en/docs/authentication/oauth-1-0a
+
+    //Follow: RFC-5849
     public class OAuth1Authenticator : IAuthenticator{
 
         //Authenticator should only hold the secret. Each request should carry their own OAuth1Token or OAuth2Token (with callback URL, request type and everything)
@@ -69,24 +77,34 @@ namespace Haley.Utils
         }
 
         private void FillQueryParam(HttpRequestMessage request,ref OAuth1TokenParam param) {
-            param.QueryParams = new Dictionary<string, string>(); //to ensure it is not null.
-            //TODO:
-            //Get all queries from the URL and add it to the list.
-
+            param.QueryParams = NetUtils.OAuth.ParseQueryParameters(request:request); //to ensure it is not null.
+            //TODO: CONSIDER THE BODY AND ALSO THE URLCONDED FORM BODY LATER.
         }
 
         public string GetAuthorizationHeader(OAuth1Token tokeninfo, OAuth1TokenParam tokenParam) {
             ValidateInputs(tokeninfo, tokenParam);
             RestParamList paramlist = new RestParamList();
 
+            //1.Generate oauth_ protocol parameters
             var headerParams = GenerateHeaderParams(tokeninfo, tokenParam);
-            paramlist.AddDictionary(headerParams,kvp_encodestrict:true); //Add all headers.
-            paramlist.AddDictionary(tokenParam?.QueryParams,kvp_encodestrict:true); //Add all queries with values.
+            paramlist.AddDictionary(headerParams,kvp_encodestrict:false); //Add all headers.
 
+            //2.Fetch other parameters
+            paramlist.AddDictionary(tokenParam?.QueryParams,kvp_encodestrict:false); //Add all queries with values.
+
+            //3.Generate the base string
             var basestring = GenerateBaseString(paramlist, tokeninfo, tokenParam);
-            var signature = NetUtils.UrlEncodeRelaxed(GenerateSignature(tokeninfo, basestring));
-            headerParams.Add(RestConstants.OAuth.Signature, signature);
-            return WriteAuthHeader(headerParams, tokeninfo.Prefix);
+
+            //4.Prepare Header without signature
+            var _header_base = WriteAuthHeader(paramlist);
+
+            //5.Prepare signature based on the information available
+            //var signature = NetUtils.UrlEncodeRelaxed(GenerateSignature(tokeninfo, basestring));
+            var signature = Uri.EscapeDataString(GenerateSignature(tokeninfo, basestring));
+
+            //6. Attach signature
+            string auth_header = $@"{tokeninfo.Prefix.Trim()} {_header_base},{RestConstants.OAuth.Signature}=""{signature}""";
+            return auth_header;
         }
         #endregion
 
@@ -109,13 +127,28 @@ namespace Haley.Utils
                     break;
             }
         }
-        private string WriteAuthHeader(Dictionary<string,string> param_list,string prefix) {
+        //private string WriteAuthHeader(Dictionary<string,string> param_list,string prefix) {
+        //    StringBuilder sb = new StringBuilder();
+
+        //    prefix = string.IsNullOrWhiteSpace(prefix) ? string.Empty : $@"{prefix.Trim()} "; //prefix followed by a space
+        //    //Donot include items which are not required in the header.
+        //    foreach (var item in param_list) {
+        //        sb.AppendFormat("{0}=\"{1}\",", item.Key, item.Value);
+        //    }
+        //    return sb.ToString();
+        //}
+        private string WriteAuthHeader(RestParamList paramlist) {
             StringBuilder sb = new StringBuilder();
 
-            prefix = string.IsNullOrWhiteSpace(prefix) ? string.Empty : $@"{prefix.Trim()} "; //prefix followed by a space
             //Donot include items which are not required in the header.
-            foreach (var item in param_list) {
-                sb.AppendFormat("{0}=\"{1}\",", item.Key, item.Value);
+            var count = paramlist.Count();
+            int i = 0;
+            foreach (var item in paramlist) {
+                sb.AppendFormat("{0}=\"{1}\"", item.Key, item.Value);
+                i++;
+                if (i < count) {
+                    sb.Append(",");
+                }
             }
             return sb.ToString();
         }
@@ -132,8 +165,11 @@ namespace Haley.Utils
             //Check : https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
 
             //Prepare
-            var cons_secret = Uri.EscapeDataString(tokeninfo.Secret.ConsumerSecret);
-            var token_secret = Uri.EscapeDataString(tokeninfo.Secret.TokenSecret ?? string.Empty); //Cannot escape null value so change to empty.
+            string cons_secret = Uri.EscapeDataString(tokeninfo.Secret.ConsumerSecret);
+            string token_secret = "";
+            if (tokeninfo.Secret != null && !string.IsNullOrWhiteSpace(tokeninfo.Secret.TokenSecret)) {
+                token_secret = Uri.EscapeDataString(tokeninfo.Secret.TokenSecret); //Cannot escape null value so change to empty.
+            }
             var _key = string.Concat(cons_secret, "&", token_secret); //Use both secrets for signing
 
             //Note that there are some flows, such as when obtaining a request token, where the token secret is not yet known. In this case, the signing key should consist of the percent encoded consumer secret followed by an ampersand character ‘&’.
@@ -166,21 +202,26 @@ namespace Haley.Utils
             sb.Append("&");
 
             //2. Reqeust URL (percent encoded) followed by ampersand
-            sb.Append(NetUtils.UrlEncodeRelaxed(NetUtils.ConstructRequestUrl(tokenparam.RequestURL))); //can also directly give the string.
+            //sb.Append(NetUtils.UrlEncodeRelaxed(NetUtils.OAuthUtils.ConstructRequestUrl(tokenparam.RequestURL))); //can also directly give the string.
+            sb.Append(Uri.EscapeDataString(NetUtils.OAuth.ConstructRequestUrl(tokenparam.RequestURL))); //can also directly give the string.
             sb.Append("&");
 
             //3. Append other parameters alphabetically. (Ensure all values have some value)
-            sb.Append(NetUtils.UrlEncodeRelaxed(paramList.GetConcatenatedString(encodevalues:true))); //Get concated string of the params (to do : url encoding)
+            //sb.Append(NetUtils.UrlEncodeRelaxed(paramList.GetConcatenatedString(encodevalues:true))); //Get concated string of the params (to do : url encoding)
+            sb.Append(Uri.EscapeDataString(paramList.GetConcatenatedString(encodevalues:false))); //Get concated string of the params (to do : url encoding)
             return sb.ToString();
         }
 
         private Dictionary<string, string> GenerateHeaderParams(OAuth1Token tokeninfo, OAuth1TokenParam tokenparam) {
-            var unixtimestamp = NetUtils.GetTimeStamp();
-            var nonce = NetUtils.GetNonce(32);
+
+            //As specified in Section 3.1 of RFC5849 
+            var unixtimestamp = NetUtils.OAuth.GetTimeStamp();
+            var nonce = NetUtils.OAuth.GetNonce();
 
             //SIGNATURE SHOULD NOT BE GENERATED HERE.
             SortedDictionary<string, string> result = new SortedDictionary<string, string>(); //Sorted information is mandatory
             //Mandatory
+
             result.Add(RestConstants.OAuth.ConsumerKey, tokeninfo.Secret.ConsumerKey);
             result.Add(RestConstants.OAuth.Nonce, nonce);
             result.Add(RestConstants.OAuth.TimeStamp, unixtimestamp);

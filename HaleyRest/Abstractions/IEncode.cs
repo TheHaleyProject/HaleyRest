@@ -20,8 +20,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Haley.Abstractions
 {
-    public interface IEncodeRequest {
+    public interface IEncode<T> {
         bool CanEncode { get; }
-        void SetEncoded();
+        T SetEncoded();
     }
 }

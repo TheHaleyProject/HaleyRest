@@ -100,10 +100,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\..\Downloads\RestSharp-dev\RestSharp-dev\src\RestSharp\RestSharp.csproj">
-      <Project>{a34ea9d4-6c58-4eea-a131-8ca630e31871}</Project>
-      <Name>RestSharp</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\HaleyHelpers\HaleyHelpers\HaleyHelpers.csproj">
       <Project>{8433a9d8-d485-4f33-8489-a562056d33bb}</Project>
       <Name>HaleyHelpers</Name>

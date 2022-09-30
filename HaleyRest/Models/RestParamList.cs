@@ -70,7 +70,7 @@ namespace Haley.Models {
             foreach (var key in @params.AllKeys) {
                 var _key = kvp_encodestrict ? NetUtils.UrlEncodeStrict(key):key;
                 var _value = kvp_encodestrict ? NetUtils.UrlEncodeStrict(@params[key]) : @params[key];
-                var param = new RestParam(_key,_value) {CanEncodeValue = can_encode_value };
+                var param = new RestParam(_key,_value) {CanEncode = can_encode_value };
                 base.Add(param);
             }
         }
@@ -80,7 +80,7 @@ namespace Haley.Models {
             foreach (var item in @params) {
                 var _key = kvp_encodestrict ? NetUtils.UrlEncodeStrict(item.Key) : item.Key;
                 var _value = kvp_encodestrict ? NetUtils.UrlEncodeStrict(item.Value) : item.Value;
-                var param = new RestParam(_key, _value) { CanEncodeValue = can_encode_value };
+                var param = new RestParam(_key, _value) { CanEncode = can_encode_value };
                 base.Add(param);
             }
         }
@@ -102,16 +102,19 @@ namespace Haley.Models {
             var total = copiedList.Count();
             int i = 0;
             foreach (var item in copiedList) {
+                //key
                 sb.Append(item.Key);
+                //= sign
                 sb.Append(kvp_merger);
-                if (encodevalues && item.CanEncodeValue) {
+                //value
+                if (encodevalues && item.CanEncode) {
                     sb.Append(NetUtils.UrlEncodeRelaxed(item.Value));
                 }
                 else {
                     sb.Append(item.Value);
                 }
-                sb.Append(item.Value);
 
+                // & splitter if needed
                 i++;
                 if (i < total) {
                     sb.Append(splitter);

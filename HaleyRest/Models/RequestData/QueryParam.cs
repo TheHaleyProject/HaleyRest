@@ -14,8 +14,9 @@ namespace Haley.Models
         public new string Value => base.Value as string; //Hiding the base Value.
         public bool CanEncode { get; private set; }
 
-        public void SetEncoded() {
+        public IRequestQuery SetEncoded() {
             CanEncode = false; //Set only once. Cannot encode or change it again back to true.
+            return this;
         }
 
         /// <summary>
