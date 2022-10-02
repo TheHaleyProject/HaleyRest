@@ -108,7 +108,8 @@ namespace Haley.Models {
                 sb.Append(kvp_merger);
                 //value
                 if (encodevalues && item.CanEncode) {
-                    sb.Append(NetUtils.UrlEncodeRelaxed(item.Value));
+                    sb.Append(Uri.EscapeDataString(item.Value));
+                    item.SetEncoded();
                 }
                 else {
                     sb.Append(item.Value);

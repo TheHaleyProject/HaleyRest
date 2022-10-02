@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "RestCallTests": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:9080;http://localhost:9081"
+    }
+  }
+}

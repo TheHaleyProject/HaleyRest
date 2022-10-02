@@ -208,7 +208,8 @@ namespace Haley.Utils
 
             //3. Append other parameters alphabetically. (Ensure all values have some value)
             //sb.Append(NetUtils.UrlEncodeRelaxed(paramList.GetConcatenatedString(encodevalues:true))); //Get concated string of the params (to do : url encoding)
-            sb.Append(Uri.EscapeDataString(paramList.GetConcatenatedString(encodevalues:false))); //Get concated string of the params (to do : url encoding)
+            //the values of the params should be encoded as well. (values will be encoded first, then the whole generate string will be encoded)
+            sb.Append(Uri.EscapeDataString(paramList.GetConcatenatedString(encodevalues:true))); //Get concated string of the params (to do : url encoding)
             return sb.ToString();
         }
 

@@ -66,7 +66,7 @@ namespace Haley.Utils
                 return normUrl;
             }
 
-            public static Dictionary<string,string> ParseQueryParameters(HttpRequestMessage request) {
+            public static Dictionary<string,string> ParseQueryParameters(HttpRequestMessage request, string ignore_prefix = "oauth_") {
                 string query = String.Empty;
                 if (request.RequestUri.IsAbsoluteUri) {
                     query = request.RequestUri.Query;
@@ -75,10 +75,10 @@ namespace Haley.Utils
                     int idx = relative_url.IndexOf('?');
                     query = idx >= 0 ? relative_url.Substring(idx) : "";
                 }
-                return ParseQueryParameters(query_string: query);
+                return ParseQueryParameters(query_string: query,ignore_prefix:ignore_prefix);
             }
 
-            public static Dictionary<string, string> ParseQueryParameters(string query_string) {
+            public static Dictionary<string, string> ParseQueryParameters(string query_string,string ignore_prefix = "oauth_") {
                 var result = new Dictionary<string, string>();
 
                 if (string.IsNullOrWhiteSpace(query_string)) return result;
@@ -87,14 +87,19 @@ namespace Haley.Utils
                 if (queryString.StartsWith("?"))
                     queryString = queryString.Remove(0, 1);
 
-                foreach (var qpair in queryString.Split('&'))
-                    if (!string.IsNullOrEmpty(qpair) && !qpair.StartsWith("oauth_")) //because oauth_ protocols are added separately
+                foreach (var qpair in queryString.Split('&')) {
+                    if (!string.IsNullOrEmpty(qpair)) {
+                        if (!string.IsNullOrWhiteSpace(ignore_prefix) && qpair.StartsWith(ignore_prefix)) continue;
+                        //because oauth_ protocols are added separately
                         if (qpair.IndexOf('=') > -1) {
                             var temp = qpair.Split('=');
                             result.Add(temp[0], temp[1]);
-                        } else {
+                        }
+                        else {
                             result.Add(qpair, string.Empty);
                         }
+                    }
+                }
                 return result;
             }
         }

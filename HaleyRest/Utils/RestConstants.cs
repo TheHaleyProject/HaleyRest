@@ -14,6 +14,7 @@ namespace Haley.Utils
             public const string TimeStamp = "oauth_timestamp";
             public const string Version = "oauth_version";
             public const string Token = "oauth_token";
+            public const string TokenSecret = "oauth_token_secret";
             public const string Callback = "oauth_callback";
             public const string Verifier = "oauth_verifier";
             public const string SessionHandle = "oauth_session_handle";
