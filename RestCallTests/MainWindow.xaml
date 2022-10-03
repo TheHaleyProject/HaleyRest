@@ -7,11 +7,31 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Button Height="30" Width="120" Content="Log In" Click="Button_Click"/>
-        <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10">
-            <TextBlock Text="PORT : " VerticalAlignment="Center"/>
-            <TextBox x:Name="tbxPort" Text="9780"  Width="50" Height="25" TextAlignment="Center" VerticalContentAlignment="Center"/>
-        </WrapPanel>
-        <TextBlock x:Name="tblock_msg" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10" Foreground="Gray"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid>
+            <Button x:Name="btnLogin" Height="30" Width="120" Content="Log In" Click="Button_Click" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15"/>
+            <Button x:Name="btnGetUser" Height="30" Width="120" Content="Get User Info" Click="UserInfo" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15" Visibility="Collapsed" Background="CornflowerBlue"/>
+
+            <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10">
+                <TextBlock Text="PORT : " VerticalAlignment="Center"/>
+                <TextBox x:Name="tbxPort" Text="9780"  Width="50" Height="25" TextAlignment="Center" VerticalContentAlignment="Center"/>
+            </WrapPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Background="#FFF1F0F0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="tblckSuccess" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" TextWrapping="Wrap"/>
+            <TextBlock x:Name="tblck_rawInfo" Grid.Column="1"  TextWrapping="Wrap"/>
+        </Grid>
+        <Grid Grid.Row="2">
+            <TextBlock x:Name="tblock_msg" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10" Foreground="Gray"/>
+        </Grid>
     </Grid> 
 </Window>

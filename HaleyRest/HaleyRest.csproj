@@ -23,6 +23,7 @@
 	  <IncludeSymbols>true</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	  <PackageReleaseNotes>Minor fix. Updated Haley references</PackageReleaseNotes>
+	  <Configurations>Debug;Release;Debug_Net6</Configurations>
   </PropertyGroup>
   
 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">

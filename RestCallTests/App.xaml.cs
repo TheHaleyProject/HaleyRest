@@ -22,9 +22,6 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Diagnostics;
 using System.Net;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Mvc;
 using System.Threading;
 
 using System.Net.Http;
@@ -36,8 +33,10 @@ namespace RestCallTests
     public partial class App : Application
     {
         private void Application_Startup(object sender, StartupEventArgs e) {
+            ClientStore.AddClient("betaclient", new FluentClient($@"https://daep.withbc.com"));
             var window = new MainWindow();
             window.Show();
+            //Task.Run(() => APIService.InitiateSelfHostNetCore());
         }
 
         private void Application_Exit(object sender, ExitEventArgs e) {

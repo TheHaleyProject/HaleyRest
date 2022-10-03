@@ -24,9 +24,10 @@ namespace Haley.Abstractions
     /// <summary>
     /// A simple straightforward HTTPclient Wrapper.
     /// </summary>
-    public interface IClient : IRestBase
+    public interface IClient : IRestBase, IRestBase<IClient>
     {
         string FriendlyName { get; }
+        bool InheritAuthenticationForAllRequests { get; set; }
         /// <summary>
         /// The Base HTTPClient
         /// </summary>
@@ -39,7 +40,7 @@ namespace Haley.Abstractions
         /// Creates an empty request
         /// </summary>
         /// <returns></returns>
-        IRestBase CreateRequest();
+        IRequest CreateRequest();
         IClient UpdateFriendlyName(string friendlyName);
     }
 }

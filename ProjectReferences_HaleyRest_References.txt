@@ -2,5 +2,6 @@
   <PropertyGroup>
     <HaleyRest>$(SolutionDir)HaleyRest</HaleyRest>
     <HaleyHelpers>$(SolutionDir)..\HaleyHelpers\HaleyHelpers</HaleyHelpers>  
+    <HaleyExtensions>$(SolutionDir)..\HaleyExtensions\HaleyExtensions</HaleyExtensions>
   </PropertyGroup>
 </Project>

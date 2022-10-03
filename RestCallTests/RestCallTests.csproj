@@ -1,15 +1,28 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0-windows</TargetFramework>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>net472;netcoreapp3.1;net6.0-windows</TargetFrameworks>
     <UseWPF>true</UseWPF>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>RestCall.Test</AssemblyName>
+    <RootNamespace>RestCall.Test</RootNamespace>
+    <Version>6.0.8-development-1</Version>
+    <Authors>Lingam</Authors>
+    <Product>Lingam</Product>
+    <Copyright>Haley @ 2020</Copyright>
+    <AssemblyVersion>4.0.2.0</AssemblyVersion>
+    <FileVersion>4.0.2.0</FileVersion>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Platforms>AnyCPU;x86;x64</Platforms>
+    <Configurations>Debug;Release;Debug_Net6</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Owin" Version="6.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
+    <PackageReference Include="Haley.Events" Version="2.1.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Owin" Version="6.0.9" Condition="'$(TargetFramework)' == 'net6.0-windows'" />
+    <PackageReference Include="Microsoft.AspNetCore.Owin" Version="3.1.29" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.OwinSelfHost" Version="5.2.9" Condition="'$(TargetFramework)' == 'net472'" />
   </ItemGroup>
 
   <!--
@@ -20,6 +33,12 @@
   
   <ItemGroup>
     <ProjectReference Include="..\HaleyRest\HaleyRest.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFramewrok)' == 'net472'">
+    <Reference Include="System.Net" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Routing" />
   </ItemGroup>
 
 </Project>

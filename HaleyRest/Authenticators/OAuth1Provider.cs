@@ -27,20 +27,20 @@ namespace Haley.Utils
     //https://developer.twitter.com/en/docs/authentication/oauth-1-0a
 
     //Follow: RFC-5849
-    public class OAuth1Authenticator : IAuthenticator{
+    public class OAuth1Provider : IAuthProvider{
 
         //Authenticator should only hold the secret. Each request should carry their own OAuth1Token or OAuth2Token (with callback URL, request type and everything)
         public OAuth1Token Token { get; private set; }
-        public OAuth1Authenticator():this(null,null) { }
-        public OAuth1Authenticator(OAuth1Token token) {
+        public OAuth1Provider():this(null,null) { }
+        public OAuth1Provider(OAuth1Token token) {
             Token = token ?? new OAuth1Token(string.Empty, string.Empty);
         }
-        public OAuth1Authenticator(string consumer_key,string consumer_secret) :this(new OAuth1Token(consumer_key,consumer_secret)) {
+        public OAuth1Provider(string consumer_key,string consumer_secret) :this(new OAuth1Token(consumer_key,consumer_secret)) {
 
         }
         #region Public Methods
 
-        public OAuth1Authenticator UpdateToken(OAuth1Token token) {
+        public OAuth1Provider UpdateToken(OAuth1Token token) {
             Token = token ?? new OAuth1Token(string.Empty, string.Empty);
             return this;
         }
@@ -48,13 +48,13 @@ namespace Haley.Utils
             if (Token == null) Token = new OAuth1Token();
             return Token;
         }
-        public OAuth1Authenticator UpdateConsumerSecret(string consumer_key, string consumer_secret) {
+        public OAuth1Provider UpdateConsumerSecret(string consumer_key, string consumer_secret) {
             //When consumer secret changes, we need to reset the secret itself.
             var token = GetToken();
             token.UpdateSecret(new OAuthSecret(consumer_key, consumer_secret));
             return this;
         }
-        public OAuth1Authenticator UpdateTokenSecret(string access_token_key, string access_token_secret) {
+        public OAuth1Provider UpdateTokenSecret(string access_token_key, string access_token_secret) {
             var token = GetToken();
             //When token secret changes, we merely update the info.
             token.Secret.UpdateTokenInfo(access_token_key, access_token_secret);
@@ -119,6 +119,7 @@ namespace Haley.Utils
 
             switch (tokenParam.RequestType) {
                 case OAuthRequestType.AccessToken:
+                case OAuthRequestType.ForProtectedResource:
                     //If the request is for access token, then we need both the key and secret for the access token
                     if (string.IsNullOrWhiteSpace(tokeninfo.Secret.TokenKey)) throw new ArgumentNullException(nameof(OAuth1Token.Secret.TokenKey));
                     if (string.IsNullOrWhiteSpace(tokeninfo.Secret.TokenSecret)) throw new ArgumentNullException(nameof(OAuth1Token.Secret.TokenSecret));
@@ -246,6 +247,7 @@ namespace Haley.Utils
 
             switch (tokenparam.RequestType) {
                 case OAuthRequestType.AccessToken:
+                case OAuthRequestType.ForProtectedResource:
                     result.Add(RestConstants.OAuth.Token, tokeninfo.Secret.TokenKey);
                     break;
                 default:

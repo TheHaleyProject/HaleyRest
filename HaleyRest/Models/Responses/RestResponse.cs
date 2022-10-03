@@ -4,6 +4,9 @@ using System.Net;
 using System.Net.Http;
 using System.IO;
 using System.Threading.Tasks;
+using System.Linq;
+using System.IO.Compression;
+using System.Text;
 
 namespace Haley.Models
 {
@@ -17,25 +20,63 @@ namespace Haley.Models
             Content = content;
             return this;
         }
-        public async Task<RestResponse<T>> FetchContent() {
-            if (base.OriginalContent == null) return this;
-            if (typeof(T) == typeof(byte[])) {
-                Content = await base.OriginalContent?.ReadAsByteArrayAsync() as T;
-            }
-            else if (typeof(T) == typeof(string)) {
-                Content = await base.OriginalContent?.ReadAsStringAsync() as T;
-            }
-            else if (typeof(T) == typeof(Stream)) {
-                Content = await base.OriginalContent?.ReadAsStreamAsync() as T;
-            }
-            else {
-                //Get it as string and then try to convert it to the object using converters of some sort.
-                _stringcontent = await base.OriginalContent?.ReadAsStringAsync();
-                if (_converter != null) {
-                    Content = _converter.Invoke(_stringcontent);
+        async Task<Stream> GetDecodedStream() {
+            try {
+                var possible_encoding = OriginalContent.Headers.ContentEncoding.FirstOrDefault(); //assuming there is only one encoding possible.
+                var originalStream = await OriginalContent.ReadAsStreamAsync();
+                Stream result = originalStream;
+                if (possible_encoding.ToLower().Contains("gzip")) {
+                    result = new GZipStream(originalStream, CompressionMode.Decompress);
+                } else if (possible_encoding.ToLower().Contains("deflate")) {
+                    result = new DeflateStream(originalStream, CompressionMode.Decompress);
                 }
+                //else if (possible_encoding.ToLower().Contains("br")) {
+                //    result = new GZipStream(originalStream, CompressionMode.Decompress);
+                //}
+                return result;
+            } catch (Exception ex) {
+                throw ex;
             }
-            return this;
+        }
+        public async Task<RestResponse<T>> FetchContent() {
+            try {
+                if (base.OriginalContent == null) return this;
+                Stream decoded_stream = null;
+                //If content is encoded, we need to first decode it.
+                if (IsContentEncoded) {
+                    decoded_stream = await GetDecodedStream();
+                }
+                if (typeof(T) == typeof(byte[])) {
+                    Content = (await base.OriginalContent?.ReadAsByteArrayAsync()) as T;
+                } else if (typeof(T) == typeof(string)) {
+                    if (IsContentEncoded) {
+                        //Should we also use different encoding?
+                        var sreader = new StreamReader(decoded_stream, Encoding.Default); //Using block will dispose the stream.
+                        Content = (await sreader.ReadToEndAsync()) as T;
+                        //decoded_stream.Position = 0; //reset at the beginning.
+                        //using (var sreader = new StreamReader(decoded_stream, Encoding.Default)) {
+                        //    Content = await sreader.ReadToEndAsync() as T;
+                        //}
+                    } else {
+                        Content = await base.OriginalContent?.ReadAsStringAsync() as T;
+                    }
+                } else if (typeof(T) == typeof(Stream)) {
+                    if (IsContentEncoded) {
+                        Content = decoded_stream as T;
+                    } else {
+                        Content = (await base.OriginalContent?.ReadAsStreamAsync()) as T;
+                    }
+                } else {
+                    //Get it as string and then try to convert it to the object using converters of some sort.
+                    _stringcontent = await base.OriginalContent?.ReadAsStringAsync();
+                    if (_converter != null) {
+                        Content = _converter.Invoke(_stringcontent);
+                    }
+                }
+                return this;
+            } catch (Exception ex) {
+                throw ex;
+            }
         }
 
         public RestResponse<T> SetConveter(Func<string,T> converter) {

@@ -34,6 +34,7 @@ namespace Haley.Models
     {
         public HttpClient BaseClient { get;  }
         public string FriendlyName { get; private set; }
+        public bool InheritAuthenticationForAllRequests { get; set; }
 
         #region Attributes
         Func<HttpRequestMessage, Task<bool>> _request_validation_cb;
@@ -75,43 +76,44 @@ namespace Haley.Models
             return this;
         }
 
-        private IRestBase GetNewRequest() {
-            return new RestRequest().SetClient(this);
+        private IRequest GetNewRequest() {
+            var result = new RestRequest().SetClient(this);
+            if (InheritAuthenticationForAllRequests) {
+                result.InheritAuthentication(_inherit_authentication);
+            }
+            return result;
         }
-
-        public IRestBase CreateRequest() {
+        public IRequest CreateRequest() {
             return GetNewRequest();   
         }
-
-        public override IRestBase WithEndPoint(string resource_url_endpoint) {
+        public override IRequest WithEndPoint(string resource_url_endpoint) {
             return GetNewRequest().WithEndPoint(resource_url_endpoint);
             //Method chaining will ensure that the subsequent calls are made to the restrequest and not to this client as we are returning a rest request here..
         }
-
-        public override IRestBase AddCancellationToken(CancellationToken cancellation_token) {
+        public override IRequest AddCancellationToken(CancellationToken cancellation_token) {
             return GetNewRequest().AddCancellationToken(cancellation_token);
         }
        
-        public override IRestBase WithParameter(RequestObject param) {
+        public override IRequest WithParameter(RequestObject param) {
             return GetNewRequest().WithParameter(param);
         }
 
-        public override IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type) {
+        public override IRequest WithBody(object content, bool is_serialized, BodyContentType content_type) {
             return GetNewRequest().WithBody(content, is_serialized, content_type);
         }
 
-        public override IRestBase WithParameters(IEnumerable<RequestObject> parameters) {
+        public override IRequest WithParameters(IEnumerable<RequestObject> parameters) {
             return GetNewRequest().WithParameters(parameters);
         }
 
-        public override IRestBase WithContent(HttpContent content) {
+        public override IRequest WithContent(HttpContent content) {
             return GetNewRequest().WithContent(content);
         }
-        public override IRestBase WithQuery(QueryParam param) {
+        public override IRequest WithQuery(QueryParam param) {
             return GetNewRequest().WithQuery(param);
         }
 
-        public override IRestBase WithQueries(IEnumerable<QueryParam> parameters) {
+        public override IRequest WithQueries(IEnumerable<QueryParam> parameters) {
             return GetNewRequest().WithQueries(parameters);
         }
 
@@ -153,5 +155,74 @@ namespace Haley.Models
 
             return await ((new RestRequest().SetClient(this)) as RestRequest).SendAsync(request);
         }
+
+        #region Common Methods
+        public new IClient SetAuthenticator(IAuthProvider authenticator) {
+            base.SetAuthenticator(authenticator);
+            return this;
+        }
+
+        public new IClient RemoveAuthenticator() {
+            base.RemoveAuthenticator();
+            return this;
+        }
+
+        public new IClient SetAuthParam(object auth_param) {
+            base.SetAuthParam(auth_param);
+            return this;
+        }
+
+        public new IClient ResetHeaders() {
+            base.ResetHeaders();
+            return this;
+        }
+
+        public new IClient ResetHeaders(Dictionary<string, IEnumerable<string>> reset_values) {
+            base.ResetHeaders(reset_values);
+            return this;
+        }
+
+        public new IClient AddDefaultHeaders() {
+            base.AddDefaultHeaders();
+            return this;
+        }
+
+        public new IClient AddHeader(string name, string value) {
+            base.AddHeader(name, value);
+            return this;
+        }
+
+        public new IClient AddHeaderValues(string name, List<string> values) {
+            base.AddHeaderValues(name, values);
+            return this;
+        }
+
+        public new IClient ReplaceHeader(string name, string value) {
+            base.ReplaceHeader(name, value);
+            return this;
+        }
+
+        public new IClient ReplaceHeaderValues(string name, List<string> values) {
+            base.ReplaceHeaderValues(name, values);
+            return this;
+        }
+
+        public new IClient AddJsonConverter(JsonConverter converter) {
+            base.AddJsonConverter(converter);
+            return this;
+        }
+
+        public new IClient RemoveJsonConverter(JsonConverter converter) {
+            base.RemoveJsonConverter(converter);
+            return this;
+        }
+
+        public new IClient SetLogger(ILogger logger) {
+            base.SetLogger(logger);
+            return this;
+        }
+
+        #endregion
+
     }
 }

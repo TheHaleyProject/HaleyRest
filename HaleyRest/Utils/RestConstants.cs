@@ -24,6 +24,7 @@ namespace Haley.Utils
         public class Headers {
             public const string Host = "Host";
             public const string Accept = "Accept";
+            public const string AcceptCharSet = "Accept-Charset";
             public const string AcceptEncoding = "Accept-Encoding";
             public const string AcceptLanguage = "Accept-Language";
             public const string SetCookie = "Set-Cookie";

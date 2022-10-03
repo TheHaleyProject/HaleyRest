@@ -12,7 +12,13 @@ namespace Haley.Models
         public HttpContent OriginalContent => OriginalResponse == null ? null : OriginalResponse.Content;
 
         public bool IsSuccessStatusCode => OriginalResponse == null ? false : OriginalResponse.IsSuccessStatusCode;
-        public IRequest Request {get; internal set;}
+        public bool IsContentEncoded => GetEncodeStatus();
+
+        private bool GetEncodeStatus() {
+            if (OriginalContent == null || OriginalContent.Headers?.ContentEncoding == null) return false;
+            if (OriginalContent.Headers?.ContentEncoding.Count > 0) return true;
+            return false;
+        }
         public string Message { get; private set; }
 
         public IResponse UpdateResponse(HttpResponseMessage response) {

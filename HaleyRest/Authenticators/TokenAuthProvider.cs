@@ -19,7 +19,7 @@ using Haley.Abstractions;
 
 namespace Haley.Utils
 {
-    public class TokenAuthenticator : IAuthenticator{
+    public class TokenAuthProvider : IAuthProvider{
         private string _token = string.Empty;
         private string _token_prefix = "Bearer";
         public string GenerateToken(Uri baseuri, HttpRequestMessage request,object param) {
@@ -32,7 +32,7 @@ namespace Haley.Utils
             return GetToken(_prefix);
         }
 
-        public IAuthenticator SetToken(string token, string token_prefix) {
+        public IAuthProvider SetToken(string token, string token_prefix) {
             if (token == null) throw new ArgumentNullException(nameof(token));
             _token = token;
             _token_prefix = token_prefix;
@@ -44,6 +44,6 @@ namespace Haley.Utils
             return result.Trim();
         }
         
-        public TokenAuthenticator() { }
+        public TokenAuthProvider() { }
     }
 }

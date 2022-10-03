@@ -51,23 +51,23 @@ namespace Haley.Models
         #endregion
 
         #region region Request Creation
-        public override IRestBase WithQuery(QueryParam param) {
+        public override IRequest WithQuery(QueryParam param) {
             return WithParameter(param);
         }
-        public override IRestBase WithQueries(IEnumerable<QueryParam> parameters) {
+        public override IRequest WithQueries(IEnumerable<QueryParam> parameters) {
             return WithParameters(parameters);
         }
-        public override IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type) {
+        public override IRequest WithBody(object content, bool is_serialized, BodyContentType content_type) {
             return WithParameter(new RawBodyRequest(content, is_serialized, content_type));
         }
-        public override IRestBase WithParameter(RequestObject param) {
+        public override IRequest WithParameter(RequestObject param) {
             return WithParameters(new List<RequestObject>() { param });
         }
-        public override IRestBase WithParameters(IEnumerable<RequestObject> parameters) {
+        public override IRequest WithParameters(IEnumerable<RequestObject> parameters) {
             _requestObjects = parameters;
             return this;
         }
-        public override IRestBase WithContent(HttpContent content) {
+        public override IRequest WithContent(HttpContent content) {
             _content = content;
             return this;
         }
@@ -78,12 +78,12 @@ namespace Haley.Models
             this.Client = client;
             return this;
         }
-        public override IRestBase WithEndPoint(string resource_url_endpoint) {
+        public override IRequest WithEndPoint(string resource_url_endpoint) {
             URL = ParseURI(resource_url_endpoint).pathQuery; //What if we needed to use full URL?
             return this;
         }
 
-        public override IRestBase AddCancellationToken(CancellationToken cancellation_token) {
+        public override IRequest AddCancellationToken(CancellationToken cancellation_token) {
             this._cancellation_token = cancellation_token;
             return this;
         }
@@ -140,7 +140,7 @@ namespace Haley.Models
             return authenticator?.GenerateToken(this.Client?.BaseClient?.BaseAddress, request, authparam) ?? String.Empty;
         }
 
-        private IAuthenticator FetchAuthenticator(IRestBase source) {
+        private IAuthProvider FetchAuthenticator(IRestBase source) {
             var authenticator = source.GetAuthenticator();
             if (authenticator != null) {
                 return authenticator;
@@ -252,6 +252,7 @@ namespace Haley.Models
             else {
                 message = await Client.BaseClient.SendAsync(request);
             }
+
             return new BaseResponse(message);
         }
         
@@ -417,9 +418,88 @@ namespace Haley.Models
             }
         }
         #endregion
+
+        #region Common Methods
+        public new IRequest SetAuthenticator(IAuthProvider authenticator) {
+            base.SetAuthenticator(authenticator);
+            return this;
+        }
+
+        public new IRequest RemoveAuthenticator() {
+            base.RemoveAuthenticator();
+            return this;
+        }
+
+        public new IRequest SetAuthParam(object auth_param) {
+            base.SetAuthParam(auth_param);
+            return this;
+        }
+
+        public new IRequest ResetHeaders() {
+            base.ResetHeaders();
+            return this;
+        }
+
+        public new IRequest ResetHeaders(Dictionary<string, IEnumerable<string>> reset_values) {
+            base.ResetHeaders(reset_values);
+            return this;
+        }
+
+        public new IRequest AddDefaultHeaders() {
+            base.AddDefaultHeaders();
+            return this;
+        }
+
+        public new IRequest AddHeader(string name, string value) {
+            base.AddHeader(name, value);
+            return this;
+        }
+
+        public new IRequest AddHeaderValues(string name, List<string> values) {
+            base.AddHeaderValues(name, values);
+            return this;
+        }
+        public new IRequest ReplaceHeader(string name, string value) {
+            base.ReplaceHeader(name, value);
+            return this;
+        }
+
+        public new IRequest ReplaceHeaderValues(string name, List<string> values) {
+            base.ReplaceHeaderValues(name, values);
+            return this;
+
+        }
+        public new IRequest AddJsonConverter(JsonConverter converter) {
+            base.AddJsonConverter(converter);
+            return this;
+        }
+
+        public new IRequest RemoveJsonConverter(JsonConverter converter) {
+            base.RemoveJsonConverter(converter);
+            return this;
+        }
+
+        public new IRequest SetLogger(ILogger logger) {
+            base.SetLogger(logger);
+            return this;
+        }
+
+        public new IRequest InheritHeaders(bool inherit) {
+            base.InheritHeaders(inherit);
+            return this;
+        }
+
+        public new IRequest InheritAuthentication(bool inherit_authenticator, bool inherit_parameter) {
+           base.InheritAuthentication(inherit_authenticator, inherit_parameter);
+            return this;
+        }
+
+        #endregion
         public override string ToString()
         {
             return this.URL;
         }
+
+        
     }
 }

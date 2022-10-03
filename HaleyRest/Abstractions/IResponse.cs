@@ -8,7 +8,7 @@ namespace Haley.Abstractions
     public interface IResponse
     {
         string Message { get; }
-        IRequest Request { get; }
+        bool IsContentEncoded { get; }
         HttpResponseMessage OriginalResponse { get; }
         bool IsSuccessStatusCode { get; }
         HttpContent OriginalContent { get; }

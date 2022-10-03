@@ -28,36 +28,32 @@ namespace Haley.Abstractions
     {
         string Id { get; }
         string URL { get; }
-        IRestBase InheritHeaders(bool inherit = true);
-        IRestBase InheritAuthentication(bool inherit_authenticator = true,bool inherit_parameter = true); //Give preference to Authenticator to generate a new token. If authenticator is not available, take the parent token.
-        IRestBase SetLogger(ILogger logger);
-        IRestBase ResetHeaders();
-        IRestBase ResetHeaders(Dictionary<string, IEnumerable<string>> reset_values);
-        IRestBase AddDefaultHeaders();
-        IRestBase AddHeader(string name, string value);
-        IRestBase AddHeaders(string name, List<string> values);
-        Dictionary<string, IEnumerable<string>> GetHeaders();
-        IRestBase AddCancellationToken(CancellationToken cancellation_token);
-        IRestBase AddJsonConverter(JsonConverter converter);
-        IRestBase RemoveJsonConverter(JsonConverter converter);
-        IRestBase WithEndPoint(string resource_url_endpoint);
+
+        #region Return Requests
+        
+        IRequest AddCancellationToken(CancellationToken cancellation_token); //Cancellation token is only for the requests.
+        IRequest WithEndPoint(string resource_url_endpoint);
         //Prepare Request
-        IRestBase WithParameter(RequestObject param);
-        IRestBase WithParameters(IEnumerable<RequestObject> parameters);
-        IRestBase WithQuery(QueryParam param);
-        IRestBase WithQueries(IEnumerable<QueryParam> parameters);
-        IRestBase WithContent(HttpContent content);
-        IRestBase WithBody(object content, bool is_serialized, BodyContentType content_type);
-        IRestBase SetAuthenticator(IAuthenticator authenticator);
-        IRestBase RemoveAuthenticator();
-        IRestBase SetAuthParam(object auth_param);
-        IAuthenticator GetAuthenticator();
+        IRequest WithParameter(RequestObject param);
+        IRequest WithParameters(IEnumerable<RequestObject> parameters);
+        IRequest WithQuery(QueryParam param);
+        IRequest WithQueries(IEnumerable<QueryParam> parameters);
+        IRequest WithContent(HttpContent content);
+        IRequest WithBody(object content, bool is_serialized, BodyContentType content_type);
+        #endregion
+
+        #region Generic Returns
+        
+        IAuthProvider GetAuthenticator();
         object GetAuthParam();
+        Dictionary<string, IEnumerable<string>> GetHeaders();
+
         Task<RestResponse<T>> GetAsync<T>() where T : class;
         Task<IResponse> GetAsync();
         Task<IResponse> PostAsync();
         Task<IResponse> PutAsync();
         Task<IResponse> DeleteAsync();
         Task<IResponse> SendAsync(Method method);
+        #endregion
     }
 }
