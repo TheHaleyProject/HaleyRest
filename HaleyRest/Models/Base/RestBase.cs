@@ -35,9 +35,7 @@ namespace Haley.Models
         public string URL { get; protected set; }
         
         protected ConcurrentDictionary<Type, JsonConverter> _jsonConverters = new ConcurrentDictionary<Type, JsonConverter>();
-        protected bool _inherit_headers = false;
-        protected bool _inherit_authentication = false;
-        protected bool _inherit_auth_param = false; 
+        
         #region Attributes
         ILogger _logger;
         ConcurrentDictionary<string, IEnumerable<string>> _headers = new ConcurrentDictionary<string, IEnumerable<string>>();
@@ -149,16 +147,7 @@ namespace Haley.Models
             _authenticator = authenticator;
             return this;
         }
-        protected IRestBase InheritHeaders(bool inherit = true) {
-            _inherit_headers = inherit;
-            return this;
-        }
-
-        protected IRestBase InheritAuthentication(bool inherit_authenticator = true, bool inherit_parameter = true) {
-            _inherit_authentication = inherit_authenticator;
-            _inherit_auth_param = inherit_parameter;
-            return this;
-        }
+       
 
         protected IRestBase SetAuthParam(object auth_param) {
             _authParam = auth_param;

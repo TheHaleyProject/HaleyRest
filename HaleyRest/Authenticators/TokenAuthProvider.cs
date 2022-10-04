@@ -22,12 +22,14 @@ namespace Haley.Utils
     public class TokenAuthProvider : IAuthProvider{
         private string _token = string.Empty;
         private string _token_prefix = "Bearer";
-        public string GenerateToken(Uri baseuri, HttpRequestMessage request,object param) {
+        public string GenerateToken(Uri baseuri, HttpRequestMessage request, params object[] args) {
             //Param will override the prefix.
             var _prefix = _token_prefix;
-            if (param != null && param is string prefstr) {
+
+            if (args.Length > 0 && args[0] is string prefstr) {
                 _prefix = prefstr;
             }
+           
             //For jwt we dont' do anythign with the request.
             return GetToken(_prefix);
         }

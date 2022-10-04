@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HaleyHelpers", "..\HaleyHel
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TEST", "TEST", "{8DE45A0F-C4DC-4D84-8282-452997E5CA47}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestCallTests", "RestCallTests\RestCallTests.csproj", "{D62BE8B4-A1F6-4400-93BA-5F2634A0F998}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestCallTests", "__Test\RestCallTests\RestCallTests.csproj", "{D62BE8B4-A1F6-4400-93BA-5F2634A0F998}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HaleyExtensions", "..\HaleyExtensions\HaleyExtensions\HaleyExtensions.csproj", "{3963E04E-2E4A-4AF8-8068-886473826A78}"
 EndProject

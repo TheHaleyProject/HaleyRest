@@ -27,7 +27,7 @@ namespace Haley.Abstractions
     public interface IClient : IRestBase, IRestBase<IClient>
     {
         string FriendlyName { get; }
-        bool InheritAuthenticationForAllRequests { get; set; }
+        
         /// <summary>
         /// The Base HTTPClient
         /// </summary>
@@ -42,5 +42,6 @@ namespace Haley.Abstractions
         /// <returns></returns>
         IRequest CreateRequest();
         IClient UpdateFriendlyName(string friendlyName);
+        IClient AutoAuthenticateRequests(bool auto_authenticate = true);
     }
 }

@@ -35,7 +35,9 @@ namespace Haley.Models
         HttpRequestMessage _request = null;  //Prio-1
         HttpContent _content = null; //Prio-2
         IEnumerable<RequestObject> _requestObjects = new List<RequestObject>();//Prio-3
-
+        protected bool _inherit_headers = false;
+        protected bool _inherit_authentication = false;
+        protected bool _inherit_auth_param = false;
         #region Attributes
         string _boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
         CancellationToken? _cancellation_token = null;
@@ -137,7 +139,10 @@ namespace Haley.Models
         private string GetAuthValue(IRestBase source,HttpRequestMessage request) {
             var authenticator = FetchAuthenticator(this);
             var authparam = FetchAuthParam(this);
-            return authenticator?.GenerateToken(this.Client?.BaseClient?.BaseAddress, request, authparam) ?? String.Empty;
+
+            //When calling the authenticator from internally, let's also add url_decode because we know that we are already encoding (Uri.EscapeDataString) the query parameters (both Key and value).
+            //"true" after authparam is for url_decode
+            return authenticator?.GenerateToken(this.Client?.BaseClient?.BaseAddress, request, authparam,true) ?? String.Empty;
         }
 
         private IAuthProvider FetchAuthenticator(IRestBase source) {
@@ -293,12 +298,12 @@ namespace Haley.Models
                 WriteLog(LogLevel.Debug, $@"Request body of type {_requestBody?.GetType()} is getting added to request body.");
                 if (_requestBody is RawBodyRequest rawReq) {
                     //Just add a raw content and send.
-                    result = prepareRawBody(rawReq);
+                    result = PrepareRawBody(rawReq);
 
                 }
                 else if (_requestBody is FormBodyRequest formreq) {
                     //Decide if this is multipart form or urlencoded form data
-                    result = prepareFormBody(formreq);
+                    result = PrepareFormBody(formreq);
                 }
                 return result;
             }
@@ -321,7 +326,7 @@ namespace Haley.Models
                 if (param.CanEncode) {
                     //Encode before adding
                     if (param.CanEncode) {
-                        //_key = Uri.EscapeDataString(_key);
+                        _key = Uri.EscapeDataString(_key);
                         _value = Uri.EscapeDataString(_value);
                         param.SetEncoded(); //cannot encode again, its already encoded
                     }
@@ -335,7 +340,7 @@ namespace Haley.Models
             }
             return result;
         }
-        protected HttpContent prepareRawBody(RawBodyRequest rawbody) {
+        protected HttpContent PrepareRawBody(RawBodyRequest rawbody) {
             try {
                 HttpContent result = null;
                 switch (rawbody.BodyType) {
@@ -390,7 +395,7 @@ namespace Haley.Models
                 return null;
             }
         }
-        protected HttpContent prepareFormBody(FormBodyRequest formbody) {
+        protected HttpContent PrepareFormBody(FormBodyRequest formbody) {
             try {
                 HttpContent result = null;
                 //Form can be url encoded form and multi form.. //TODO : REFINE
@@ -401,7 +406,7 @@ namespace Haley.Models
 
                 foreach (var item in formbody.Value) {
                     if (item.Value == null) continue;
-                    var rawContent = prepareRawBody(item.Value);
+                    var rawContent = PrepareRawBody(item.Value);
                     if (string.IsNullOrWhiteSpace(item.Value.FileName)) {
                         form_content.Add(rawContent, item.Key); //Also add the key.
                     }
@@ -485,12 +490,13 @@ namespace Haley.Models
         }
 
         public new IRequest InheritHeaders(bool inherit) {
-            base.InheritHeaders(inherit);
+            _inherit_headers = inherit;
             return this;
         }
 
         public new IRequest InheritAuthentication(bool inherit_authenticator, bool inherit_parameter) {
-           base.InheritAuthentication(inherit_authenticator, inherit_parameter);
+            _inherit_authentication = inherit_authenticator;
+            _inherit_auth_param = inherit_parameter;
             return this;
         }
 
@@ -499,7 +505,5 @@ namespace Haley.Models
         {
             return this.URL;
         }
-
-        
     }
 }

@@ -16,7 +16,12 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Platforms>AnyCPU;x86;x64</Platforms>
     <Configurations>Debug;Release;Debug_Net6</Configurations>
+    <ApplicationIcon>cdelogo30.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="cdelogo30.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Haley.Events" Version="2.1.9" />

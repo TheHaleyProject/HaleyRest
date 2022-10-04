@@ -66,19 +66,19 @@ namespace Haley.Utils
                 return normUrl;
             }
 
-            public static Dictionary<string,string> ParseQueryParameters(HttpRequestMessage request, string ignore_prefix = "oauth_") {
+            public static Dictionary<string,string> ParseQueryParameters(HttpRequestMessage request, bool? url_decode = null, string ignore_prefix = "oauth_") {
                 string query = String.Empty;
                 if (request.RequestUri.IsAbsoluteUri) {
                     query = request.RequestUri.Query;
                 } else {
                     var relative_url = request.RequestUri.ToString();
                     int idx = relative_url.IndexOf('?');
-                    query = idx >= 0 ? relative_url.Substring(idx) : "";
+                    query = idx >= 0 ? relative_url.Substring(idx) : ""; //If there is no question mark, we don't have any parameter for the query
                 }
-                return ParseQueryParameters(query_string: query,ignore_prefix:ignore_prefix);
+                return ParseQueryParameters(query_string: query,url_decode:url_decode, ignore_prefix:ignore_prefix);
             }
 
-            public static Dictionary<string, string> ParseQueryParameters(string query_string,string ignore_prefix = "oauth_") {
+            public static Dictionary<string, string> ParseQueryParameters(string query_string, bool? url_decode = null,string ignore_prefix = "oauth_") {
                 var result = new Dictionary<string, string>();
 
                 if (string.IsNullOrWhiteSpace(query_string)) return result;
@@ -90,13 +90,27 @@ namespace Haley.Utils
                 foreach (var qpair in queryString.Split('&')) {
                     if (!string.IsNullOrEmpty(qpair)) {
                         if (!string.IsNullOrWhiteSpace(ignore_prefix) && qpair.StartsWith(ignore_prefix)) continue;
+
                         //because oauth_ protocols are added separately
                         if (qpair.IndexOf('=') > -1) {
                             var temp = qpair.Split('=');
-                            result.Add(temp[0], temp[1]);
+
+                            var _key = temp[0];
+                            var _value = temp[1];
+
+                            if (url_decode.HasValue && url_decode.Value) {
+                                _key = string.IsNullOrWhiteSpace(_key) ? "" : Uri.UnescapeDataString(_key);
+                                _value = string.IsNullOrWhiteSpace(_value) ? "" : Uri.UnescapeDataString(_value);
+                            }
+                            result.Add(_key,_value);
                         }
                         else {
-                            result.Add(qpair, string.Empty);
+                            var _key = qpair;
+
+                            if (url_decode.HasValue && url_decode.Value) {
+                                _key = string.IsNullOrWhiteSpace(_key) ? "" : Uri.UnescapeDataString(_key);
+                            }
+                            result.Add(_key, string.Empty);
                         }
                     }
                 }

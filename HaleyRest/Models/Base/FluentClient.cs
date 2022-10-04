@@ -34,12 +34,12 @@ namespace Haley.Models
     {
         public HttpClient BaseClient { get;  }
         public string FriendlyName { get; private set; }
-        public bool InheritAuthenticationForAllRequests { get; set; }
 
         #region Attributes
         Func<HttpRequestMessage, Task<bool>> _request_validation_cb;
         HttpClientHandler _handler = new HttpClientHandler();
         Uri _base_uri;
+        bool _auto_authenticate = false;
         #endregion
 
         #region Constructors
@@ -78,10 +78,15 @@ namespace Haley.Models
 
         private IRequest GetNewRequest() {
             var result = new RestRequest().SetClient(this);
-            if (InheritAuthenticationForAllRequests) {
-                result.InheritAuthentication(_inherit_authentication);
+            if (_auto_authenticate) {
+                result.InheritAuthentication(_auto_authenticate);
             }
             return result;
+        }
+
+        public IClient AutoAuthenticateRequests(bool auto_authenticate = true) {
+            _auto_authenticate = auto_authenticate;
+            return this;
         }
         public IRequest CreateRequest() {
             return GetNewRequest();   

@@ -61,10 +61,23 @@ namespace Haley.Utils
             return this;
         }
 
-        public string GenerateToken(Uri baseuri, HttpRequestMessage request,object auth_param) {
+        public string GenerateToken(Uri baseuri, HttpRequestMessage request, params object[] args) {
             if (request == null) throw new ArgumentNullException(nameof(HttpRequestMessage));
             //When a request is also attached, we should overwrite the parameters in auth_param (like request url, parameters)
-            var tokenParam = auth_param as OAuth1TokenParam;
+
+            OAuth1TokenParam tokenParam = null;
+            bool? url_decode = false;
+
+            switch (args.Length) {
+                case 1:
+                    tokenParam = args[0] as OAuth1TokenParam;
+                    break;
+                case 2:
+                    tokenParam = args[0] as OAuth1TokenParam;
+                    url_decode = args[1] as bool?;
+                    break;
+            }
+            
             if (tokenParam == null) tokenParam = new OAuth1TokenParam() {
                 RequestType = OAuthRequestType.ForProtectedResource,
             };
