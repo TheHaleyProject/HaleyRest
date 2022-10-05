@@ -33,6 +33,14 @@ namespace RestCallTests
     public partial class App : Application
     {
         private void Application_Startup(object sender, StartupEventArgs e) {
+            var title = AssemblyUtils.GetInfo(AssemblyInfo.Title);
+            var des1 = AssemblyUtils.GetInfo(AssemblyInfo.Description);
+            var title2 = AssemblyUtils.GetInfo(AssemblyInfo.Product);
+            var title3 = AssemblyUtils.GetInfo(AssemblyInfo.Version);
+            var title4 = AssemblyUtils.GetInfo(AssemblyInfo.Company);
+            var title5 = AssemblyUtils.GetInfo(AssemblyInfo.Trademark);
+            var title6 = AssemblyUtils.GetInfo(AssemblyInfo.Copyright);
+
             ClientStore.AddClient("betaclient", new FluentClient($@"https://daep.withbc.com"));
             var window = new MainWindow();
             window.Show();

@@ -164,7 +164,7 @@ namespace RestCallTests
 
                 var result = await _res4.AsStringResponseAsync();
                 if (!string.IsNullOrWhiteSpace(result?.Content)) {
-                    var _dic = NetUtils.OAuth.ParseQueryParameters(result.Content, null);
+                    var _dic = NetUtils.OAuth.ParseQueryParameters(result.Content, null,ignore_prefix:null);
                     var oauth_token = _dic[RestConstants.OAuth.Token];
                     var temp_oauth_token_secret = _dic[RestConstants.OAuth.TokenSecret];
                     _temptokens.TryAdd(oauth_token, (temp_oauth_token_secret,string.Empty));

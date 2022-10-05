@@ -37,7 +37,9 @@
   -->
   
   <ItemGroup>
-    <ProjectReference Include="..\HaleyRest\HaleyRest.csproj" />
+    <ProjectReference Include="..\..\..\HaleyExtensions\HaleyExtensions\HaleyExtensions.csproj" />
+    <ProjectReference Include="..\..\..\HaleyHelpers\HaleyHelpers\HaleyHelpers.csproj" />
+    <ProjectReference Include="..\..\HaleyRest\HaleyRest.csproj" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramewrok)' == 'net472'">
