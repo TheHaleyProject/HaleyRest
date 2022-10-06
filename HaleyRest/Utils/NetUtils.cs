@@ -135,7 +135,7 @@ namespace Haley.Utils
                 }
                 return _path;
             } catch (Exception ex) {
-                throw ex;
+                throw;
             }
         }
 

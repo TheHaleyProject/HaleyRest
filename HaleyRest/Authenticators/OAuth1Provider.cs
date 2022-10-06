@@ -30,6 +30,12 @@ namespace Haley.Utils
     public class OAuth1Provider : IAuthProvider{
 
         //Authenticator should only hold the secret. Each request should carry their own OAuth1Token or OAuth2Token (with callback URL, request type and everything)
+        private Encoding _encoding = Encoding.UTF8;
+        public Encoding Encoding {
+            get { return _encoding; }
+            set { _encoding = value; }
+        }
+
         public OAuth1Token Token { get; private set; }
         public OAuth1Provider():this(null,null) { }
         public OAuth1Provider(OAuth1Token token) {
@@ -167,7 +173,7 @@ namespace Haley.Utils
             return sb.ToString();
         }
         private string GenerateHash(string input,HashAlgorithm algorithm) {
-            var byteArray = Encoding.UTF8.GetBytes(input);
+            var byteArray = Encoding.GetBytes(input);
             //var byteArray = Encoding.ASCII.GetBytes(input);
             var hash = algorithm.ComputeHash(byteArray); //algo will already contain the key required.
             return Convert.ToBase64String(hash);
@@ -191,19 +197,34 @@ namespace Haley.Utils
             //Encrypt
             switch (tokeninfo.SignatureType) {
                 case SignatureType.HMACSHA1:
-                    var hmac = new HMACSHA1();
-                    hmac.Key = Encoding.UTF8.GetBytes(_key); //Key as a byte array
+                case SignatureType.HMACSHA256:
+                case SignatureType.HMACSHA512:
+                    HMAC hmac = new HMACSHA1();
+                        switch (tokeninfo.SignatureType) {
+                            case SignatureType.HMACSHA256:
+                            hmac = new HMACSHA256();
+                                break;
+                            case SignatureType.HMACSHA512:
+                            hmac = new HMACSHA512();
+                                break;
+                        }
+                    hmac.Key = Encoding.GetBytes(_key); //Key as a byte array
                     //hmac.Key = Encoding.ASCII.GetBytes(_key); //Key as a byte array
                     result = GenerateHash(base_string, hmac);
                     break;
-                case SignatureType.HMACSHA256:
-                case SignatureType.HMACSHA512:
                 case SignatureType.RSASHA1:
-                case SignatureType.RSASHA256:
-                case SignatureType.RSASHA512:
-                case SignatureType.PLAINTEXT:
-                default:
+                    using (var provider = new RSACryptoServiceProvider { PersistKeyInCsp = false }) {
+                        provider.FromXmlString(tokeninfo.Secret.ConsumerSecret); //UnEcoded consumer secret (no token secret)
+                        var hasher = SHA1.Create();
+                        var hash = hasher.ComputeHash(Encoding.GetBytes(base_string));
+                        result =  Convert.ToBase64String(provider.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
+                    } ;
                     break;
+                case SignatureType.PLAINTEXT:
+                    result = _key; //Direclty send the key back.
+                    break;
+                default:
+                    throw new NotImplementedException("This signature signing is not implement yet. Please try with HMAC-SHA1, HMAC-SHA256, RSA-SHA1 or PlainText.");
             }
             return result;
         }
@@ -268,7 +289,6 @@ namespace Haley.Utils
             }
             return result.ToDictionary(p=> p.Key, p=> p.Value);
         }
-
       
         #endregion
     }

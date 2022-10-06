@@ -285,7 +285,7 @@ namespace Haley.Models
                 return (processed_content, processed_url);
             }
             catch (Exception ex) {
-                throw ex;
+                throw;
             }
         }
         protected HttpContent PrepareBody(IEnumerable<RequestObject> paramList, Method method) {
