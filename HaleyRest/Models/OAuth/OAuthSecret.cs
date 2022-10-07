@@ -28,5 +28,6 @@ namespace Haley.Models
         public OAuthSecret(string consumer_key, string consumer_secret):this(consumer_key,consumer_secret,null,null) {
             
         }
+        public OAuthSecret() : this(string.Empty, string.Empty, null, null) { }
     }
 }
