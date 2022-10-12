@@ -39,7 +39,7 @@ namespace Haley.Models
         Func<HttpRequestMessage, Task<bool>> _request_validation_cb;
         HttpClientHandler _handler = new HttpClientHandler();
         Uri _base_uri;
-        bool _auto_authenticate = false;
+        bool _auto_authenticate = true;
         #endregion
 
         #region Constructors

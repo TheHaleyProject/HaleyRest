@@ -36,6 +36,9 @@ namespace RestCallTests
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window {
+
+        JsonNode rootnode;
+        JsonNode usernode;
         private OAuth1Token GetNewToken() {
             return new OAuth1Token("4579bfc5-0671-4087-bed3-00a41b5cff8c", "f292-3177-e0b1-22ae-e253-5bfd-dbec-84d5");
         }
@@ -65,7 +68,7 @@ namespace RestCallTests
                         .Result;
                     var responsestr = response.AsStringResponseAsync().Result;
                     if (!string.IsNullOrWhiteSpace(responsestr?.Content)) {
-                        var _dic = NetUtils.OAuth.ParseQueryParameters(responsestr.Content, null);
+                        var _dic = NetUtils.OAuth.ParseQueryParameters(responsestr.Content, ignore_prefix: null);
                         var access_token = _dic[RestConstants.OAuth.Token];
                         var access_secret = _dic[RestConstants.OAuth.TokenSecret];
                         _mainToken.Secret.UpdateTokenInfo(access_token, access_secret);
@@ -74,8 +77,9 @@ namespace RestCallTests
                         btnLogin.Dispatcher.Invoke(() => {
                             btnLogin.IsEnabled = false;
                             btnLogin.Visibility = Visibility.Collapsed;
-                            btnGetUser.IsEnabled = true;
-                            btnGetUser.Visibility = Visibility.Visible;
+                            authWrapper.IsEnabled = true;
+                            authWrapper.Visibility = Visibility.Visible;
+                            
                         });
                     } else {
                         SetTblockMessage("Connection with CDE failed");
@@ -102,7 +106,7 @@ namespace RestCallTests
                 var root_json =await GetAPIResult(client, _apipath);
                 var root = JsonNode.Parse(root_json);
                 if (root == null) return false;
-
+                rootnode = root;
                 //User
                 var user_endpoint = root["current_state"]?["user"]?.GetValue<string>();
                 if (user_endpoint != null) {
@@ -111,8 +115,56 @@ namespace RestCallTests
                     var user = JsonNode.Parse(user_json);
                     if (user!= null) {
                         tblckSuccess.Text = $@"Hello , {user["fullname"]}.{Environment.NewLine}Your account is -{user["account_state"]}";
+                        usernode = user;
                     }
                 }
+                return true;
+            } catch (Exception ex) {
+                throw;
+            }
+        }
+
+        private async Task<bool> CreateFolder() {
+            try {
+                //a post content
+                var client = ClientStore.GetClient("betaclient");
+                JsonNode homenode = rootnode["home"];
+
+                string homeurl = string.Empty;
+                if (homenode is JsonObject) {
+                    homeurl = homenode.AsObject()?.GetValue<string>();
+                } else {
+                    homeurl = homenode.GetValue<string>();
+                }
+                var endpoint = $@"{homeurl}/contents";
+                var homecontents = await GetAPIResult(client, endpoint); //get contents.
+
+
+                var baseobj = new CreationBase() { Name = "new test", Description = "trying with conversion", Kind = "folder" };
+                var convertedbase = baseobj.ToJson();
+
+                var body = @"{
+                    " + "\n" +
+                    @"    ""name"":""test space 66asdf"",
+                    " + "\n" +
+                    @"    ""descr"":""testing from haley client"",
+                    " + "\n" +
+                    @"    ""kind"":""folder""
+                    " + "\n" +
+                    @"}";
+                var result = await client
+                                     .WithEndPoint(endpoint)
+                                     .WithBody(body,true,BodyContentType.StringContent)
+                                     .InheritAuthentication()
+                                     .PostAsync();
+                var str_result = await result.AsStringResponseAsync();
+                
+                var result2 = await client
+                                     .WithEndPoint(endpoint)
+                                     .WithBody(convertedbase, true,BodyContentType.StringContent)
+                                     .InheritAuthentication()
+                                     .PostAsync();
+                var str_result2 = await result2.AsStringResponseAsync();
                 return true;
             } catch (Exception ex) {
                 throw;
@@ -187,6 +239,10 @@ namespace RestCallTests
 
         private void UserInfo(object sender, RoutedEventArgs e) {
             GetUserInfo();
+        }
+
+        private void CreateFolder(object sender, RoutedEventArgs e) {
+            CreateFolder();
         }
     }
 }

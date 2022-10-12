@@ -28,7 +28,7 @@ namespace Haley.Models
         {
             BodyType = body_type;
             IsSerialized = is_serialized;
-            StringBodyFormat = StringContentFormat.Json;
+            StringBodyFormat = StringContentFormat.PlainText;
         }
     }
 }

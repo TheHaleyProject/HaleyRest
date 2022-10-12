@@ -196,7 +196,9 @@ namespace Haley.Models
 
             //SET REQUEST PROPERTY VALUE
             _request = new HttpRequestMessage(request_method, resource_Url);
-            if (content != null) _request.Content = content; //Set content if not null
+            if (content != null) {
+                _request.Content = content; //Set content if not null
+            }
 
             #region Authentication and Headers
             var _headers = GetHeaders();

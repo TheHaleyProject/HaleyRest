@@ -23,7 +23,7 @@ using System.Windows.Shapes;
 using System.Diagnostics;
 using System.Net;
 using System.Threading;
-
+using TinyOAuth1;
 using System.Net.Http;
 namespace RestCallTests
 {
@@ -41,6 +41,8 @@ namespace RestCallTests
             var title5 = AssemblyUtils.GetInfo(AssemblyInfo.Trademark);
             var title6 = AssemblyUtils.GetInfo(AssemblyInfo.Copyright);
 
+            RestCall();
+
             ClientStore.AddClient("betaclient", new FluentClient($@"https://daep.withbc.com"));
             var window = new MainWindow();
             window.Show();
@@ -49,6 +51,17 @@ namespace RestCallTests
 
         private void Application_Exit(object sender, ExitEventArgs e) {
 
+        }
+
+        private void RestCall() {
+            //var _tinyOAuth = new TinyOAuth(new TinyOAuthConfig() {ConsumerKey="4579bfc5-0671-4087-bed3-00a41b5cff8c",ConsumerSecret= "f292-3177-e0b1-22ae-e253-5bfd-dbec-84d5" });
+            ////var _accessTokenSecret = accessTokenSecret;
+            ////var _accessToken = accessToken;
+            //var request1 = new HttpRequestMessage();
+            //request.Headers.Authorization = _tinyOAuth.GetAuthorizationHeader(_accessToken, _accessTokenSecret,
+            //    request.RequestUri.AbsoluteUri, request.Method);
+
+            //return base.SendAsync(request, cancellationToken);
         }
     }
 }

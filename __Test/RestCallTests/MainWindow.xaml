@@ -13,10 +13,20 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid>
-            <Button x:Name="btnLogin" Height="30" Width="120" Content="Log In" Click="Button_Click" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15"/>
-            <Button x:Name="btnGetUser" Height="30" Width="120" Content="Get User Info" Click="UserInfo" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15" Visibility="Collapsed" Background="CornflowerBlue"/>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="auto"/>
 
-            <WrapPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10">
+            </Grid.ColumnDefinitions>
+            
+            <Button x:Name="btnLogin" Height="30" Width="120" Content="Log In" Click="Button_Click" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="15"/>
+            <WrapPanel x:Name="authWrapper" Grid.Column="1" VerticalAlignment="Center" Visibility="Collapsed">
+                <Button x:Name="btnGetUser" Height="30" Width="120" Content="Get User Info" Click="UserInfo"  Margin="5" Background="CornflowerBlue" />
+                <Button x:Name="btnCreateDocument" Height="30" Width="120" Content="Create Folder" Click="CreateFolder" Margin="5" Background="CornflowerBlue"/>
+            </WrapPanel>
+
+            <WrapPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10">
                 <TextBlock Text="PORT : " VerticalAlignment="Center"/>
                 <TextBox x:Name="tbxPort" Text="9780"  Width="50" Height="25" TextAlignment="Center" VerticalContentAlignment="Center"/>
             </WrapPanel>

@@ -25,6 +25,7 @@
 
   <ItemGroup>
     <PackageReference Include="Haley.Events" Version="2.1.9" />
+    <PackageReference Include="Haley.Extensions" Version="2.1.13.3" />
     <PackageReference Include="Microsoft.AspNetCore.Owin" Version="6.0.9" Condition="'$(TargetFramework)' == 'net6.0-windows'" />
     <PackageReference Include="Microsoft.AspNetCore.Owin" Version="3.1.29" Condition="'$(TargetFramework)' == 'netcoreapp3.1'" />
     <PackageReference Include="Microsoft.AspNet.WebApi.OwinSelfHost" Version="5.2.9" Condition="'$(TargetFramework)' == 'net472'" />
@@ -37,6 +38,7 @@
   -->
   
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\__References\TinyOAuth1-master\TinyOAuth1\TinyOAuth1.csproj" />
     <ProjectReference Include="..\..\..\HaleyExtensions\HaleyExtensions\HaleyExtensions.csproj" />
     <ProjectReference Include="..\..\..\HaleyHelpers\HaleyHelpers\HaleyHelpers.csproj" />
     <ProjectReference Include="..\..\HaleyRest\HaleyRest.csproj" />

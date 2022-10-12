@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RestCallTests", "__Test\Res
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HaleyExtensions", "..\HaleyExtensions\HaleyExtensions\HaleyExtensions.csproj", "{3963E04E-2E4A-4AF8-8068-886473826A78}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TinyOAuth1", "..\..\__References\TinyOAuth1-master\TinyOAuth1\TinyOAuth1.csproj", "{E6B8B816-7310-4F84-A89B-6BE52BE603CB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,6 +55,10 @@ Global
 		{3963E04E-2E4A-4AF8-8068-886473826A78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3963E04E-2E4A-4AF8-8068-886473826A78}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3963E04E-2E4A-4AF8-8068-886473826A78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E6B8B816-7310-4F84-A89B-6BE52BE603CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E6B8B816-7310-4F84-A89B-6BE52BE603CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E6B8B816-7310-4F84-A89B-6BE52BE603CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E6B8B816-7310-4F84-A89B-6BE52BE603CB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -62,6 +68,7 @@ Global
 		{E84B8944-B1C3-4FB1-BDCE-EDD593E5AF58} = {8DE45A0F-C4DC-4D84-8282-452997E5CA47}
 		{1B19F8EA-6BB5-4D51-8FD4-4AEC1EC872E2} = {8DE45A0F-C4DC-4D84-8282-452997E5CA47}
 		{D62BE8B4-A1F6-4400-93BA-5F2634A0F998} = {8DE45A0F-C4DC-4D84-8282-452997E5CA47}
+		{E6B8B816-7310-4F84-A89B-6BE52BE603CB} = {8DE45A0F-C4DC-4D84-8282-452997E5CA47}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2D992CC4-7837-4664-A260-F38CD8C93746}
