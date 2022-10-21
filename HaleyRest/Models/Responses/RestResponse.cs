@@ -41,6 +41,7 @@ namespace Haley.Models
         public async Task<RestResponse<T>> FetchContent() {
             try {
                 if (base.OriginalContent == null) return this;
+
                 Stream decoded_stream = null;
                 //If content is encoded, we need to first decode it.
                 if (IsContentEncoded) {

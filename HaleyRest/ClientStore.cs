@@ -60,5 +60,7 @@ namespace Haley.Rest
             return _clientDictionary.TryRemove(key, out var _removed);
         }
         public static bool RemoveClient(Enum @enum){ return RemoveClient(@enum.GetKey()); }
+
+        public static void RemoveAllClients() { _clientDictionary.Clear(); }
     }
 }
