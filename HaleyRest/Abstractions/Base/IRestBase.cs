@@ -40,10 +40,16 @@ namespace Haley.Abstractions
         IRequest WithQueries(IEnumerable<QueryParam> parameters);
         IRequest WithContent(HttpContent content);
         IRequest WithBody(object content, bool is_serialized, BodyContentType content_type);
+        /// <summary>
+        /// This will upload / download files in chunk of 4096 (4 kb)
+        /// </summary>
+        /// <param name="reporter"></param>
+        /// <returns></returns>
+        IRequest WithProgressReporter(IProgressReporter reporter);
         #endregion
 
         #region Generic Returns
-        
+
         IAuthProvider GetAuthenticator();
         object GetAuthParam();
         Dictionary<string, IEnumerable<string>> GetHeaders();

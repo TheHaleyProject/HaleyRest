@@ -18,6 +18,7 @@ using System.Text.Json.Serialization;
 using Haley.Models;
 using Microsoft.Extensions.Logging;
 using System.Net.Mime;
+using static Haley.Utils.RestConstants;
 
 namespace Haley.Abstractions
 {
@@ -32,6 +33,7 @@ namespace Haley.Abstractions
         T ResetHeaders();
         T ResetHeaders(Dictionary<string, IEnumerable<string>> reset_values);
         T AddDefaultHeaders();
+        T RemoveHeader(string name);
         T AddHeader(string name, string value);
         T AddHeaderValues(string name, List<string> values);
         T ReplaceHeader(string name, string value);

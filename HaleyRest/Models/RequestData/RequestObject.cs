@@ -27,6 +27,14 @@ namespace Haley.Models
     {
         public string Id { get;}
         public object Value { get; private set; }
+        /// <summary>
+        /// This will be shared with the HTTP Request. Can be used for sending the request with file name.
+        /// </summary>
+        public string Title { get; set; }
+        /// <summary>
+        /// Additional information for this object
+        /// </summary>
+        public string Description { get; set; }
         public void UpdateValue(object value) {
             Value = value;
         }

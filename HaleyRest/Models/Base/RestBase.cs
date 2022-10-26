@@ -116,6 +116,14 @@ namespace Haley.Models
             AddHeaderValues(name, new List<string>() { value});
             return this;
         }
+
+        protected IRestBase RemoveHeader(string name) {
+            if (!string.IsNullOrWhiteSpace(name)) {
+                _headers.TryRemove(name, out _);
+            }
+            return this;
+        }
+
         protected IRestBase AddHeaderValues(string name, List<string> values) {
             _headers?.TryAdd(name, values);
             return this;
@@ -225,6 +233,7 @@ namespace Haley.Models
         #endregion
 
         #region Abstract Methods
+        public abstract IRequest WithProgressReporter(IProgressReporter reporter);
         public abstract IRequest WithEndPoint(string resource_url_endpoint);
         public abstract IRequest AddCancellationToken(CancellationToken cancellation_token);
         public abstract IRequest WithParameter(RequestObject param);

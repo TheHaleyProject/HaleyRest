@@ -22,6 +22,7 @@ using System.Web;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using System.Data.Common;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Haley.Models
 {
@@ -35,9 +36,10 @@ namespace Haley.Models
         HttpRequestMessage _request = null;  //Prio-1
         HttpContent _content = null; //Prio-2
         IEnumerable<RequestObject> _requestObjects = new List<RequestObject>();//Prio-3
-        protected bool _inherit_headers = false;
-        protected bool _inherit_authentication = false;
-        protected bool _inherit_auth_param = false;
+        bool _inherit_headers = false;
+        bool _inherit_authentication = false;
+        bool _inherit_auth_param = false;
+        IProgressReporter _reporter = null;
         #region Attributes
         string _boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
         CancellationToken? _cancellation_token = null;
@@ -52,7 +54,7 @@ namespace Haley.Models
         public RestRequest() : this(string.Empty, null) { }
         #endregion
 
-        #region region Request Creation
+        #region Request Creation
         public override IRequest WithQuery(QueryParam param) {
             return WithParameter(param);
         }
@@ -89,6 +91,12 @@ namespace Haley.Models
             this._cancellation_token = cancellation_token;
             return this;
         }
+
+        public override IRequest WithProgressReporter(IProgressReporter reporter) {
+            _reporter = reporter;
+            return this;
+        }
+
         #endregion
 
         #region Get Methods
@@ -196,6 +204,7 @@ namespace Haley.Models
 
             //SET REQUEST PROPERTY VALUE
             _request = new HttpRequestMessage(request_method, resource_Url);
+
             if (content != null) {
                 _request.Content = content; //Set content if not null
             }
@@ -270,27 +279,22 @@ namespace Haley.Models
         private void ValidateClient() {
             if (Client == null) throw new ArgumentNullException(nameof(Client));
         }
-        protected (HttpContent content, string url) ConverToHttpContent(string url, IEnumerable<RequestObject> paramList, Method method) {
-            try {
-                //HTTPCONENT itself is a abstract class. We can have StringContent, StreamContent,FormURLEncodedContent,MultiPartFormdataContent.
-                //Based on the params, we might add the data to content or to the url (in case of get).
-                if (paramList == null || paramList?.Count() == 0) return (null, url ?? string.Empty);
-                HttpContent processed_content = null;
-                string processed_url = url;
+        (HttpContent content, string url) ConverToHttpContent(string url, IEnumerable<RequestObject> paramList, Method method) {
+            //HTTPCONENT itself is a abstract class. We can have StringContent, StreamContent,FormURLEncodedContent,MultiPartFormdataContent.
+            //Based on the params, we might add the data to content or to the url (in case of get).
+            if (paramList == null || paramList?.Count() == 0) return (null, url ?? string.Empty);
+            HttpContent processed_content = null;
+            string processed_url = url;
 
-                //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
-                //A get request can have a content body.
+            //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
+            //A get request can have a content body.
 
-                //The paramlist might containt multiple request param(which will be trasformed in to query). however, only one (the first) request body will be considered
-                processed_content = PrepareBody(paramList, method);
-                processed_url = PrepareQuery(url, paramList);
-                return (processed_content, processed_url);
-            }
-            catch (Exception ex) {
-                throw;
-            }
+            //The paramlist might containt multiple request param(which will be trasformed in to query). however, only one (the first) request body will be considered
+            processed_content = PrepareBody(paramList, method);
+            processed_url = PrepareQuery(url, paramList);
+            return (processed_content, processed_url);
         }
-        protected HttpContent PrepareBody(IEnumerable<RequestObject> paramList, Method method) {
+        HttpContent PrepareBody(IEnumerable<RequestObject> paramList, Method method) {
             //We can add only one type of body to an object. If we have more than one type, we log the error and take only the first item.
             try {
                 HttpContent result = null;
@@ -314,7 +318,7 @@ namespace Haley.Models
                 return null;
             }
         }
-        protected string PrepareQuery(string url, IEnumerable<RequestObject> paramList) {
+        string PrepareQuery(string url, IEnumerable<RequestObject> paramList) {
             string result = url;
             var _query = HttpUtility.ParseQueryString(string.Empty);
 
@@ -342,12 +346,16 @@ namespace Haley.Models
             }
             return result;
         }
-        protected HttpContent PrepareRawBody(RawBodyRequest rawbody) {
+        HttpContent PrepareRawBody(RawBodyRequest rawbody) {
             try {
+
+                //Dont use the Decription of the rawbody request anywhere. It will be used only for internal purpose
+
                 HttpContent result = null;
+                string mediatype = string.IsNullOrWhiteSpace(rawbody.MIMEType)? "application/octet-stream" : rawbody.MIMEType;
+
                 switch (rawbody.BodyType) {
                     case BodyContentType.StringContent:
-                        string mediatype = null;
                         string _serialized_content = rawbody.Value as string; //Assuming it is already serialized.
 
                         switch (rawbody.StringBodyFormat) {
@@ -371,7 +379,16 @@ namespace Haley.Models
                                 mediatype = "text/plain";
                                 break;
                         }
-                        result = new StringContent(_serialized_content, Encoding.UTF8, mediatype);
+
+                        if (_reporter != null) {
+                            byte[] byteArray = Encoding.UTF8.GetBytes(_serialized_content);
+                            MemoryStream stream = new MemoryStream(byteArray);
+                            result = new ProgressableStreamContent(stream, _reporter, rawbody.Id) { Title = rawbody.Title, Description = rawbody.Description};
+                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.Title ?? "attachment" };
+                        } else {
+                            //string content.
+                            result = new StringContent(_serialized_content, Encoding.UTF8);
+                        }
                         break;
 
                     case BodyContentType.ByteArrayContent:
@@ -381,15 +398,20 @@ namespace Haley.Models
                             result = new ByteArrayContent(byteContent, 0, byteContent.Length);
                         }
                         else if (rawbody.Value is Stream streamContent) {
-                            //If stream content.
-                            result = new StreamContent(streamContent);
+                            if (_reporter != null) {
+                                result = new ProgressableStreamContent(streamContent,_reporter,rawbody.Id);
+                            } else {
+                                //If stream content.
+                                result = new StreamContent(streamContent);
+                            }
                             //Dont' remove all headers. Only the content type. Header might have authentications properly set.
-                            result.Headers.Remove("Content-Type");
-                            result.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.FileName ?? "attachment" };
+                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.Title ?? "attachment" };
                         }
                         break;
                 }
+
+                result.Headers.Remove("Content-Type");
+                result.Headers.ContentType = new MediaTypeHeaderValue(mediatype);
                 return result;
             }
             catch (Exception ex) {
@@ -397,7 +419,7 @@ namespace Haley.Models
                 return null;
             }
         }
-        protected HttpContent PrepareFormBody(FormBodyRequest formbody) {
+        HttpContent PrepareFormBody(FormBodyRequest formbody) {
             try {
                 HttpContent result = null;
                 //Form can be url encoded form and multi form.. //TODO : REFINE
@@ -409,11 +431,11 @@ namespace Haley.Models
                 foreach (var item in formbody.Value) {
                     if (item.Value == null) continue;
                     var rawContent = PrepareRawBody(item.Value);
-                    if (string.IsNullOrWhiteSpace(item.Value.FileName)) {
+                    if (string.IsNullOrWhiteSpace(item.Value.Title)) {
                         form_content.Add(rawContent, item.Key); //Also add the key.
                     }
                     else {
-                        form_content.Add(rawContent, item.Key, item.Value.FileName); //File name cannot be empty. Sending empty variable throws exception/
+                        form_content.Add(rawContent, item.Key, item.Value.Title); //File name cannot be empty. Sending empty variable throws exception/
                     }
                 }
 
@@ -462,6 +484,11 @@ namespace Haley.Models
             return this;
         }
 
+        public new IRequest RemoveHeader(string name) {
+            base.RemoveHeader(name);
+            return this;
+        }
+
         public new IRequest AddHeaderValues(string name, List<string> values) {
             base.AddHeaderValues(name, values);
             return this;
@@ -491,12 +518,12 @@ namespace Haley.Models
             return this;
         }
 
-        public new IRequest InheritHeaders(bool inherit) {
+        public IRequest InheritHeaders(bool inherit) {
             _inherit_headers = inherit;
             return this;
         }
 
-        public new IRequest InheritAuthentication(bool inherit_authenticator, bool inherit_parameter) {
+        public IRequest InheritAuthentication(bool inherit_authenticator, bool inherit_parameter) {
             _inherit_authentication = inherit_authenticator;
             _inherit_auth_param = inherit_parameter;
             return this;

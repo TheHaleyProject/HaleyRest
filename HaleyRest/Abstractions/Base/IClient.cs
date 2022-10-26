@@ -32,6 +32,7 @@ namespace Haley.Abstractions
         /// The Base HTTPClient
         /// </summary>
         HttpClient BaseClient { get; }
+        IClient WithTimeOut(TimeSpan timeout);
         IClient WithRequestValidation(Func<HttpRequestMessage, Task<bool>> validationCallBack);
         Func<HttpRequestMessage, Task<bool>> GetRequestValidation();
         //A request should contain a client. We cannot directly use a request to execute this. If client is not present, then we cannot execute. So, let this be a client side call.

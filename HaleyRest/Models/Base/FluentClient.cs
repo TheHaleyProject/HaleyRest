@@ -122,6 +122,10 @@ namespace Haley.Models
             return GetNewRequest().WithQueries(parameters);
         }
 
+        public override IRequest WithProgressReporter(IProgressReporter reporter) {
+            return GetNewRequest().WithProgressReporter(reporter);
+        }
+
         public override async Task<RestResponse<T>> GetAsync<T>() {
             return await GetNewRequest().GetAsync<T>();
         }
@@ -148,6 +152,11 @@ namespace Haley.Models
 
         public IClient WithRequestValidation(Func<HttpRequestMessage, Task<bool>> validationCallBack) {
             _request_validation_cb = validationCallBack;
+            return this;
+        }
+
+        public IClient WithTimeOut(TimeSpan timeout) {
+            BaseClient.Timeout = timeout;
             return this;
         }
 
@@ -199,6 +208,11 @@ namespace Haley.Models
 
         public new IClient AddHeaderValues(string name, List<string> values) {
             base.AddHeaderValues(name, values);
+            return this;
+        }
+
+        public new IClient RemoveHeader(string name) {
+            base.RemoveHeader(name);
             return this;
         }
 

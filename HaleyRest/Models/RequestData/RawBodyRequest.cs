@@ -14,8 +14,10 @@ namespace Haley.Models
             if (!IsSerialized) IsSerialized = true;
         }
         public BodyContentType BodyType { get; set; }
+
+        public string MIMEType { get; set; }
         public StringContentFormat StringBodyFormat { get; set; }
-        public string FileName { get; set; }
+
         /// <summary>
         /// Rest Param Object
         /// </summary>
