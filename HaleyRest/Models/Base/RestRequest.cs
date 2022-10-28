@@ -128,15 +128,15 @@ namespace Haley.Models
                 return await SendAsync(_request);
             } else if(_content != null) {
                 //Prio 2 : If content is availble without request.
-                return await SendAsync(_content, method);
+                return await SendAsync(_content,URL, method); //Send associated URL without parsing
             } else if(_requestObjects != null && _requestObjects.Count() > 0) {
                 //Prio 3: Conver the request objects to httpcontent.
                 var processedInputs = ConverToHttpContent(URL, _requestObjects, method); //Here, URL is just the end point.
-                return await SendAsync(processedInputs.content, method);
+                return await SendAsync(processedInputs.content, processedInputs.url, method);
             }
             else {
                 //No content, no queries. Just send the plain request with the given method.
-                return await SendAsync(null, method);
+                return await SendAsync(null,URL, method);
             }
         }
 
@@ -173,9 +173,9 @@ namespace Haley.Models
             return null;
         }
 
-        async Task<IResponse> SendAsync(HttpContent content, Method method) {
+        async Task<IResponse> SendAsync(HttpContent content, string url, Method method) {
 
-            WriteLog(LogLevel.Information, $@"Initiating a {method} request to {URL} with base url {Client.URL}");
+            WriteLog(LogLevel.Information, $@"Initiating a {method} request to {url} with base url {Client.URL}");
             //1. Here, we do not add anything to the URL or Content.
             //2. We just validate the URl and get the path and query part.
             //3. Add request headers and Authentication (if available).
@@ -195,10 +195,10 @@ namespace Haley.Models
                     break;
             }
             //At this point, do not parse the URL. It might already contain the URL params added to it. So just call the URL. // parseURI(url).resource_part
-            var uri_components = ParseURI(URL);
+            var uri_components = ParseURI(url);
             var resource_Url = uri_components.pathQuery;
 
-            if (string.IsNullOrWhiteSpace(Client.URL)) {
+            if (string.IsNullOrWhiteSpace(Client.URL)) { //if the client url is empty, then we conside the request url
                 resource_Url = URL; //Take the full url, irrespective of whatever is provided, assuming that the URL is absolute.
             }
 
@@ -227,15 +227,6 @@ namespace Haley.Models
                     }
                 }
             }
-
-            //Finally add auth header
-            
-            if (_request.Headers.Contains(RestConstants.Headers.Authorization)) {
-                _request.Headers.Remove(RestConstants.Headers.Authorization);
-            }
-            //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
-            _request.Headers.TryAddWithoutValidation(RestConstants.Headers.Authorization, GetAuthValue(this, _request));
-
             #endregion
 
             var result = await SendAsync(method);
@@ -249,6 +240,14 @@ namespace Haley.Models
         internal async Task<IResponse> SendAsync(HttpRequestMessage request) {
             this._request = request;
             ValidateClient();
+            //Authorization should happen only here because we would only add all query params before this stage.
+            if (_request.Headers.Contains(RestConstants.Headers.Authorization)) {
+                _request.Headers.Remove(RestConstants.Headers.Authorization);
+            }
+
+            //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
+            _request.Headers.TryAddWithoutValidation(RestConstants.Headers.Authorization, GetAuthValue(this, _request));
+
             var _validationCB = Client.GetRequestValidation();
 
             //if some sort of validation callback is assigned, then call that first.
