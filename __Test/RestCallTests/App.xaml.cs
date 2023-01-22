@@ -43,7 +43,7 @@ namespace RestCallTests
 
             RestCall();
 
-            ClientStore.AddClient("betaclient", new FluentClient($@"https://daep.withbc.com"));
+            ClientStore.AddClient("betaclient", new FluentClient($@""));
             var window = new MainWindow();
             window.Show();
             //Task.Run(() => APIService.InitiateSelfHostNetCore());
