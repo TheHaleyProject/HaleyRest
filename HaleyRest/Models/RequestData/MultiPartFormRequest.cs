@@ -8,7 +8,7 @@ using Haley.Abstractions;
 
 namespace Haley.Models
 {
-    public class FormBodyRequest : RequestObject,IRequestBody {
+    public class MultiPartFormRequest : RequestObject,IRequestBody {
         //public IEnumerable<RequestParam> Parameters { get; set; }
         //public void SetAllEncoded() {
         //  if(Parameters != null) {
@@ -22,7 +22,7 @@ namespace Haley.Models
         /// Rest Param Object
         /// </summary>
         /// <param name="value"></param>
-        public FormBodyRequest(Dictionary<string, RawBodyRequest> value):base(value)
+        public MultiPartFormRequest(Dictionary<string, RawBodyRequest> value):base(value)
         {
             if(value == null) {
                 base.UpdateValue(new Dictionary<string, RawBodyRequest>());

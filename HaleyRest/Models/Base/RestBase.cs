@@ -144,6 +144,7 @@ namespace Haley.Models
         }
        
         protected IRestBase ClearAuthentication() {
+            //todo: This should not remove the authenticator but should temporarily disable authentication for this call alone. 
             _authenticator = null;
             return this;
         }
