@@ -39,6 +39,7 @@ namespace Haley.Models
         bool _inherit_headers = false;
         bool _inherit_authentication = false;
         bool _inherit_auth_param = false;
+        bool _prevent_authentication = false;
         IProgressReporter _reporter = null;
         #region Attributes
         string _boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
@@ -78,6 +79,11 @@ namespace Haley.Models
         #endregion
 
         #region Base Fluent Methods
+        public IRequest DoNotAuthenticate() {
+            _prevent_authentication = true;
+            return this;
+        }
+
         public IRequest SetClient(IClient client) {
             this.Client = client;
             return this;
@@ -240,13 +246,18 @@ namespace Haley.Models
         internal async Task<IResponse> SendAsync(HttpRequestMessage request) {
             this._request = request;
             ValidateClient();
-            //Authorization should happen only here because we would only add all query params before this stage.
-            if (_request.Headers.Contains(RestConstants.Headers.Authorization)) {
-                _request.Headers.Remove(RestConstants.Headers.Authorization);
-            }
 
-            //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
-            _request.Headers.TryAddWithoutValidation(RestConstants.Headers.Authorization, GetAuthValue(this, _request));
+            //If Donot authenticate this request, then ignore all auth methods (may be the user has directly added the auth header)
+            if (!_prevent_authentication) {
+                //Authorization should happen only here because we would only add all query params before this stage.
+                if (_request.Headers.Contains(RestConstants.Headers.Authorization)) {
+                    _request.Headers.Remove(RestConstants.Headers.Authorization);
+                }
+
+                //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
+                _request.Headers.TryAddWithoutValidation(RestConstants.Headers.Authorization, GetAuthValue(this, _request));
+            }
+            
 
             var _validationCB = Client.GetRequestValidation();
 
@@ -306,9 +317,12 @@ namespace Haley.Models
                     result = PrepareRawBody(rawReq);
 
                 }
-                else if (_requestBody is FormBodyRequest formreq) {
+                else if (_requestBody is MultiPartFormRequest formreq) {
                     //Decide if this is multipart form or urlencoded form data
                     result = PrepareFormBody(formreq);
+                }
+                else if (_requestBody is FormEncodedRequest encodedReq) {
+                    result = PrepareFormEncodedBody(encodedReq);
                 }
                 return result;
             }
@@ -418,7 +432,7 @@ namespace Haley.Models
                 return null;
             }
         }
-        HttpContent PrepareFormBody(FormBodyRequest formbody) {
+        HttpContent PrepareFormBody(MultiPartFormRequest formbody) {
             try {
                 HttpContent result = null;
                 //Form can be url encoded form and multi form.. //TODO : REFINE
@@ -442,6 +456,15 @@ namespace Haley.Models
             }
             catch (Exception ex) {
                 WriteLog(LogLevel.Trace, new EventId(1003), "Error while trying to prepare Form body", ex);
+                return null;
+            }
+        }
+
+        HttpContent PrepareFormEncodedBody(FormEncodedRequest formbody) {
+            try {
+                return new StringContent(formbody.GetEncodedBodyContent(), null, "application/x-www-form-urlencoded");
+            } catch (Exception ex) {
+                WriteLog(LogLevel.Trace, new EventId(1004), "Error while trying to prepare Form Encoded body", ex);
                 return null;
             }
         }
@@ -533,5 +556,7 @@ namespace Haley.Models
         {
             return this.URL;
         }
+
+       
     }
 }
