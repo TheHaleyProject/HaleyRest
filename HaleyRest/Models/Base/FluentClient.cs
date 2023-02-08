@@ -33,7 +33,7 @@ namespace Haley.Models
     public sealed class FluentClient :RestBase, IClient
     {
         public HttpClient BaseClient { get;  }
-        public string FriendlyName { get; private set; }
+        public string FriendlyName { get; set; }
 
         #region Attributes
         Func<HttpRequestMessage, Task<bool>> _request_validation_cb;

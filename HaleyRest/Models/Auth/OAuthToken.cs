@@ -8,8 +8,8 @@ namespace Haley.Models
 {
     //FOLLOWS : https://www.rfc-editor.org/rfc/rfc5849
     public class OAuthToken {
-        public string Key { get; private set; }
-        public string Secret { get; private set; }
+        public string Key;
+        public string Secret;
         public OAuthToken Update(string key, string secret) {
             Key = key ?? string.Empty;
             Secret = secret ?? string.Empty;

@@ -8,7 +8,7 @@ namespace Haley.Models
 {
     public class BaseResponse : IResponse
     {
-        public HttpResponseMessage OriginalResponse { get; private set; }
+        public HttpResponseMessage OriginalResponse { get; set; }
         public HttpContent OriginalContent => OriginalResponse == null ? null : OriginalResponse.Content;
 
         public bool IsSuccessStatusCode => OriginalResponse == null ? false : OriginalResponse.IsSuccessStatusCode;
