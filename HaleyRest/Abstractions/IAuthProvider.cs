@@ -14,11 +14,11 @@ namespace Haley.Abstractions
     /// <description><see cref="OAuth1Provider"/> - For performing OAuth1.0 kind of authentication. Need consumer_key, consumer_secret</description>
     /// </item>
     /// <item>
-    /// <description><see cref="TokenAuthProvider"/> - For storing and sending Bearer Token authentications. Can change the prefix as required.</description>
+    /// <description><see cref="TokenAuthProvider"/> - For storing and sending Bearer Consumer authentications. Can change the prefix as required.</description>
     /// </item>
     /// </list>
     /// </summary>
     public interface IAuthProvider{
-        string GenerateToken(Uri baseuri, HttpRequestMessage request,params object[] args);
+        string GenerateToken(Uri baseuri, HttpRequestMessage request,IAuthParam auth_param);
     }
 }

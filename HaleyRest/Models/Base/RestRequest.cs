@@ -153,10 +153,9 @@ namespace Haley.Models
         private string GetAuthValue(IRestBase source,HttpRequestMessage request) {
             var authenticator = FetchAuthenticator(this);
             var authparam = FetchAuthParam(this);
-
             //When calling the authenticator from internally, let's also add url_decode because we know that we are already encoding (Uri.EscapeDataString) the query parameters (both Key and value).
             //"true" after authparam is for url_decode
-            return authenticator?.GenerateToken(this.Client?.BaseClient?.BaseAddress, request, authparam,true) ?? String.Empty;
+            return authenticator?.GenerateToken(this.Client?.BaseClient?.BaseAddress, request, authparam) ?? String.Empty;
         }
 
         private IAuthProvider FetchAuthenticator(IRestBase source) {
@@ -169,7 +168,7 @@ namespace Haley.Models
             return null;
         }
 
-        private object FetchAuthParam(IRestBase source) {
+        private IAuthParam FetchAuthParam(IRestBase source) {
             var param = source.GetAuthParam();
             if (param != null) {
                 return param;
@@ -481,7 +480,7 @@ namespace Haley.Models
             return this;
         }
 
-        public new IRequest SetAuthParam(object auth_param) {
+        public new IRequest SetAuthParam(IAuthParam auth_param) {
             base.SetAuthParam(auth_param);
             return this;
         }

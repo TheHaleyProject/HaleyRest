@@ -51,7 +51,7 @@ namespace Haley.Abstractions
         #region Generic Returns
 
         IAuthProvider GetAuthenticator();
-        object GetAuthParam();
+        IAuthParam GetAuthParam();
         Dictionary<string, IEnumerable<string>> GetHeaders();
 
         Task<RestResponse<T>> GetAsync<T>() where T : class;

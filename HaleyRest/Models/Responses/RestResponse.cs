@@ -25,6 +25,7 @@ namespace Haley.Models
                 var possible_encoding = OriginalContent.Headers.ContentEncoding.FirstOrDefault(); //assuming there is only one encoding possible.
                 var originalStream = await OriginalContent.ReadAsStreamAsync();
                 Stream result = originalStream;
+                result.Position = 0; //Because if we try to read multiple times, it will not read the values.
                 if (possible_encoding.ToLower().Contains("gzip")) {
                     result = new GZipStream(originalStream, CompressionMode.Decompress);
                 } else if (possible_encoding.ToLower().Contains("deflate")) {

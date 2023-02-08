@@ -29,7 +29,7 @@ namespace Haley.Abstractions
         {
         T SetAuthenticator(IAuthProvider authenticator);
         T RemoveAuthenticator();
-        T SetAuthParam(object auth_param);
+        T SetAuthParam(IAuthParam auth_param);
         T ResetHeaders();
         T ResetHeaders(Dictionary<string, IEnumerable<string>> reset_values);
         T AddDefaultHeaders();

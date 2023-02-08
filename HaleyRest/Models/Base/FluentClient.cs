@@ -181,7 +181,7 @@ namespace Haley.Models
             return this;
         }
 
-        public new IClient SetAuthParam(object auth_param) {
+        public new IClient SetAuthParam(IAuthParam auth_param) {
             base.SetAuthParam(auth_param);
             return this;
         }

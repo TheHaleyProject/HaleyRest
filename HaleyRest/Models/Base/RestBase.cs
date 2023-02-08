@@ -40,7 +40,7 @@ namespace Haley.Models
         ILogger _logger;
         ConcurrentDictionary<string, IEnumerable<string>> _headers = new ConcurrentDictionary<string, IEnumerable<string>>();
         IAuthProvider _authenticator;
-        object _authParam = null;
+        IAuthParam _authParam = null;
         #endregion
 
         #region Constructors
@@ -158,7 +158,7 @@ namespace Haley.Models
         }
        
 
-        protected IRestBase SetAuthParam(object auth_param) {
+        protected IRestBase SetAuthParam(IAuthParam auth_param) {
             _authParam = auth_param;
             return this;
         }
@@ -169,7 +169,7 @@ namespace Haley.Models
             return _authenticator;
 
         }
-        public object GetAuthParam() {
+        public IAuthParam GetAuthParam() {
             return _authParam;
         }
         public Dictionary<string, IEnumerable<string>> GetHeaders() {

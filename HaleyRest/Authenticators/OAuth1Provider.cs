@@ -29,119 +29,111 @@ namespace Haley.Utils
     //Follow: RFC-5849
     public class OAuth1Provider : IAuthProvider{
 
-        //Authenticator should only hold the secret. Each request should carry their own OAuth1Token or OAuth2Token (with callback URL, request type and everything)
+        //Authenticator should only hold the consumer key and secret. Each request should carry their own OAuth1ConsumerParam or OAuth2Token (with callback URL, request type and access_token, temporary token etc)
+        //reason is when multiple users are trying to use the app (which might be hosted in the server), only the consumer key/secret will be common but for each user the access_token will be different. So it is logical to split it accordingly
         private Encoding _encoding = Encoding.UTF8;
         public Encoding Encoding {
             get { return _encoding; }
             set { _encoding = value; }
         }
 
-        public OAuth1Token Token { get; private set; }
+        public OAuth1ConsumerInfo Consumer { get; private set; }
         public OAuth1Provider():this(null,null) { }
-        public OAuth1Provider(OAuth1Token token) {
-            Token = token ?? new OAuth1Token(string.Empty, string.Empty);
+        public OAuth1Provider(OAuth1ConsumerInfo consumer_param) {
+            Consumer = consumer_param ?? new OAuth1ConsumerInfo(string.Empty, string.Empty);
         }
-        public OAuth1Provider(string consumer_key,string consumer_secret) :this(new OAuth1Token(consumer_key,consumer_secret)) {
+        public OAuth1Provider(string consumer_key,string consumer_secret) :this(new OAuth1ConsumerInfo(consumer_key,consumer_secret)) {
 
         }
         #region Public Methods
 
-        public OAuth1Provider UpdateToken(OAuth1Token token) {
-            Token = token ?? new OAuth1Token(string.Empty, string.Empty);
+        public OAuth1Provider UpdateConsumer(OAuth1ConsumerInfo token) {
+            Consumer = token ?? new OAuth1ConsumerInfo(string.Empty, string.Empty);
             return this;
         }
-        private OAuth1Token GetToken() {
-            if (Token == null) Token = new OAuth1Token();
-            return Token;
+        private OAuth1ConsumerInfo GetConsumer() {
+            if (Consumer == null) Consumer = new OAuth1ConsumerInfo();
+            return Consumer;
         }
-        public OAuth1Provider UpdateConsumerSecret(string consumer_key, string consumer_secret) {
+        public OAuth1Provider UpdateConsumer(string consumer_key, string consumer_secret) {
             //When consumer secret changes, we need to reset the secret itself.
-            var token = GetToken();
-            token.UpdateSecret(new OAuthSecret(consumer_key, consumer_secret));
-            return this;
-        }
-        public OAuth1Provider UpdateTokenSecret(string access_token_key, string access_token_secret) {
-            var token = GetToken();
-            //When token secret changes, we merely update the info.
-            token.Secret.UpdateTokenInfo(access_token_key, access_token_secret);
+            var consumer = GetConsumer();
+            consumer.UpdateToken(new OAuthToken(consumer_key, consumer_secret));
             return this;
         }
 
-        public string GenerateToken(Uri baseuri, HttpRequestMessage request, params object[] args) {
+        public string GenerateToken(Uri baseuri, HttpRequestMessage request, IAuthParam auth_param) {
             if (request == null) throw new ArgumentNullException(nameof(HttpRequestMessage));
             //When a request is also attached, we should overwrite the parameters in auth_param (like request url, parameters)
 
-            OAuth1TokenParam tokenParam = null;
+            OAuth1RequestInfoEx requestInfo = new OAuth1RequestInfoEx() { RequestType = OAuthRequestType.RequestToken };
+
             bool? url_decode = false;
 
-            switch (args.Length) {
-                case 1:
-                    tokenParam = args[0] as OAuth1TokenParam;
-                    break;
-                case 2:
-                    tokenParam = args[0] as OAuth1TokenParam;
-                    url_decode = args[1] as bool?;
-                    break;
+            if (requestInfo?.Arguments?.Length > 0) {
+                url_decode = requestInfo?.Arguments[0] as bool?;
             }
-            
-            if (tokenParam == null) tokenParam = new OAuth1TokenParam() {
-                RequestType = OAuthRequestType.ForProtectedResource,
-            };
 
-            tokenParam.RequestURL = new Uri(baseuri, request.RequestUri);
-            tokenParam.Method = request.Method;
-            FillQueryParam(request,ref tokenParam);
+          //If we are trying to get the Temporary request token for first time, the requestToken will be empty ( as it is not generated yet)
+            if (auth_param is OAuth1RequestInfo authreq) {
+                authreq.MapProperties(requestInfo); //Token is ready only, 
+            }
+          
+            //Fill the URL, Method, and parameters.
+            requestInfo.RequestURL = new Uri(baseuri, request.RequestUri);
+            requestInfo.Method = request.Method;
+            FillQueryParam(request,ref requestInfo);
             //We use the request to fetch the headers and body before processing.
-            return GetAuthorizationHeader(Token,tokenParam);
+            return GetAuthorizationHeader(Consumer,requestInfo);
         }
 
-        private void FillQueryParam(HttpRequestMessage request,ref OAuth1TokenParam param) {
+        private void FillQueryParam(HttpRequestMessage request,ref OAuth1RequestInfoEx param) {
             param.QueryParams = NetUtils.OAuth.ParseQueryParameters(request:request); //to ensure it is not null.
-            //TODO: CONSIDER THE BODY AND ALSO THE URLCONDED FORM BODY LATER.
+            //TODO: CONSIDER THE BODY AND ALSO THE URLCONDED FORMBODYREQUEST LATER.
         }
-
-        public string GetAuthorizationHeader(OAuth1Token tokeninfo, OAuth1TokenParam tokenParam) {
-            ValidateInputs(tokeninfo, tokenParam);
+        
+        public string GetAuthorizationHeader(OAuth1ConsumerInfo consumerInfo, OAuth1RequestInfoEx requestInfo) {
+            ValidateInputs(consumerInfo, requestInfo);
             RestParamList paramlist = new RestParamList();
 
             //1.Generate oauth_ protocol parameters
-            var headerParams = GenerateHeaderParams(tokeninfo, tokenParam);
+            var headerParams = GenerateHeaderParams(consumerInfo, requestInfo);
             paramlist.AddDictionary(headerParams,kvp_encodestrict:false); //Add all headers.
 
             //2.Fetch other parameters
-            paramlist.AddDictionary(tokenParam?.QueryParams,kvp_encodestrict:false); //Add all queries with values.
+            paramlist.AddDictionary(requestInfo?.QueryParams,kvp_encodestrict:false); //Add all queries with values.
 
             //3.Generate the base string
-            var basestring = GenerateBaseString(paramlist, tokeninfo, tokenParam);
+            var basestring = GenerateBaseString(paramlist, consumerInfo, requestInfo);
 
             //4.Prepare Header without signature
             var _header_base = WriteAuthHeader(paramlist);
 
             //5.Prepare signature based on the information available
-            //var signature = NetUtils.UrlEncodeRelaxed(GenerateSignature(tokeninfo, basestring));
-            var signature = Uri.EscapeDataString(GenerateSignature(tokeninfo, basestring));
+            //var signature = NetUtils.UrlEncodeRelaxed(GenerateSignature(consumerInfo, basestring));
+            var signature = Uri.EscapeDataString(GenerateSignature(consumerInfo,requestInfo, basestring));
 
             //6. Attach signature
-            string auth_header = $@"{tokeninfo.Prefix.Trim()} {_header_base},{RestConstants.OAuth.Signature}=""{signature}""";
+            string auth_header = $@"{consumerInfo.Prefix.Trim()} {_header_base},{RestConstants.OAuth.Signature}=""{signature}""";
             return auth_header;
         }
         #endregion
 
         #region Private Methods
-        private void ValidateInputs(OAuth1Token tokeninfo, OAuth1TokenParam tokenParam) {
+        private void ValidateInputs(OAuth1ConsumerInfo consumerInfo, OAuth1RequestInfoEx requestInfo) {
             //To generate a signature, irrespective of whether we send the secret across or not, we need, ConsumerKey and Consumer secret.
-            if (tokeninfo == null) throw new ArgumentNullException(nameof(OAuth1Token));
-            if (tokeninfo.Secret == null) throw new ArgumentNullException(nameof(OAuth1Token.Secret));
-            if (string.IsNullOrWhiteSpace(tokeninfo.Secret.ConsumerKey)) throw new ArgumentNullException(nameof(OAuth1Token.Secret.ConsumerKey));
-            if (string.IsNullOrWhiteSpace(tokeninfo.Secret.ConsumerSecret)) throw new ArgumentNullException(nameof(OAuth1Token.Secret.ConsumerSecret));
-            if (string.IsNullOrWhiteSpace(tokenParam?.RequestURL?.ToString())) throw new ArgumentNullException(nameof(OAuth1TokenParam.RequestURL));
+            if (consumerInfo == null) throw new ArgumentNullException(nameof(OAuth1ConsumerInfo));
+            if (consumerInfo.Token == null) throw new ArgumentNullException(nameof(OAuth1ConsumerInfo.Token));
+            if (string.IsNullOrWhiteSpace(consumerInfo.Token.Key)) throw new ArgumentNullException(nameof(OAuth1ConsumerInfo.Token.Key));
+            if (string.IsNullOrWhiteSpace(consumerInfo.Token.Secret)) throw new ArgumentNullException(nameof(OAuth1ConsumerInfo.Token.Secret));
+            if (string.IsNullOrWhiteSpace(requestInfo?.RequestURL?.ToString())) throw new ArgumentNullException(nameof(OAuth1RequestInfoEx.RequestURL));
 
-            switch (tokenParam.RequestType) {
+            switch (requestInfo.RequestType) {
                 case OAuthRequestType.AccessToken:
                 case OAuthRequestType.ForProtectedResource:
                     //If the request is for access token, then we need both the key and secret for the access token
-                    if (string.IsNullOrWhiteSpace(tokeninfo.Secret.TokenKey)) throw new ArgumentNullException(nameof(OAuth1Token.Secret.TokenKey));
-                    if (string.IsNullOrWhiteSpace(tokeninfo.Secret.TokenSecret)) throw new ArgumentNullException(nameof(OAuth1Token.Secret.TokenSecret));
+                    if (string.IsNullOrWhiteSpace(requestInfo.Token.Key)) throw new ArgumentNullException(nameof(OAuth1RequestInfo.Token.Key));
+                    if (string.IsNullOrWhiteSpace(requestInfo.Token.Secret)) throw new ArgumentNullException(nameof(OAuth1RequestInfo.Token.Secret));
                     break;
                 default:
                     break;
@@ -179,28 +171,28 @@ namespace Haley.Utils
             return Convert.ToBase64String(hash);
         }
 
-        private string GenerateSignature(OAuth1Token tokeninfo,string base_string) {
+        private string GenerateSignature(OAuth1ConsumerInfo consumerInfo,OAuth1RequestInfo requestInfo,string base_string) {
             string result = String.Empty;
 
             //Check : https://developer.twitter.com/en/docs/authentication/oauth-1-0a/creating-a-signature
 
             //Prepare
-            string cons_secret = Uri.EscapeDataString(tokeninfo.Secret.ConsumerSecret);
+            string cons_secret = Uri.EscapeDataString(consumerInfo.Token.Secret);
             string token_secret = "";
-            if (tokeninfo.Secret != null && !string.IsNullOrWhiteSpace(tokeninfo.Secret.TokenSecret)) {
-                token_secret = Uri.EscapeDataString(tokeninfo.Secret.TokenSecret); //Cannot escape null value so change to empty.
+            if (requestInfo.Token != null && !string.IsNullOrWhiteSpace(requestInfo.Token.Secret)) {
+                token_secret = Uri.EscapeDataString(requestInfo.Token.Secret); //Cannot escape null value so change to empty.
             }
             var _key = string.Concat(cons_secret, "&", token_secret); //Use both secrets for signing
 
             //Note that there are some flows, such as when obtaining a request token, where the token secret is not yet known. In this case, the signing key should consist of the percent encoded consumer secret followed by an ampersand character ‘&’.
 
             //Encrypt
-            switch (tokeninfo.SignatureType) {
+            switch (consumerInfo.SignatureType) {
                 case SignatureType.HMACSHA1:
                 case SignatureType.HMACSHA256:
                 case SignatureType.HMACSHA512:
                     HMAC hmac = new HMACSHA1();
-                        switch (tokeninfo.SignatureType) {
+                        switch (consumerInfo.SignatureType) {
                             case SignatureType.HMACSHA256:
                             hmac = new HMACSHA256();
                                 break;
@@ -214,7 +206,7 @@ namespace Haley.Utils
                     break;
                 case SignatureType.RSASHA1:
                     using (var provider = new RSACryptoServiceProvider { PersistKeyInCsp = false }) {
-                        provider.FromXmlString(tokeninfo.Secret.ConsumerSecret); //UnEcoded consumer secret (no token secret)
+                        provider.FromXmlString(consumerInfo.Token.Secret); //UnEcoded consumer secret (no token secret)
                         var hasher = SHA1.Create();
                         var hash = hasher.ComputeHash(Encoding.GetBytes(base_string));
                         result =  Convert.ToBase64String(provider.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
@@ -224,21 +216,21 @@ namespace Haley.Utils
                     result = _key; //Direclty send the key back.
                     break;
                 default:
-                    throw new NotImplementedException("This signature signing is not implement yet. Please try with HMAC-SHA1, HMAC-SHA256, RSA-SHA1 or PlainText.");
+                    throw new NotImplementedException("This signature signing is not implemented yet. Please try with HMAC-SHA1, HMAC-SHA256, RSA-SHA1 or PlainText.");
             }
             return result;
         }
 
-        private string GenerateBaseString(RestParamList paramList, OAuth1Token tokeninfo,OAuth1TokenParam tokenparam) {
+        private string GenerateBaseString(RestParamList paramList, OAuth1ConsumerInfo consumerInfo,OAuth1RequestInfoEx requestInfo) {
             //Concatenate all the header params to generate the base string that will be signed in next steps.
 
             //1.HTTP Method name followed by ampersand
-            StringBuilder sb = new StringBuilder(tokenparam.Method.ToString().ToUpper()); //Get the HTTP Method name
+            StringBuilder sb = new StringBuilder(requestInfo.Method.ToString().ToUpper()); //Get the HTTP Method name
             sb.Append("&");
 
             //2. Reqeust URL (percent encoded) followed by ampersand
-            //sb.Append(NetUtils.UrlEncodeRelaxed(NetUtils.OAuthUtils.ConstructRequestUrl(tokenparam.RequestURL))); //can also directly give the string.
-            sb.Append(Uri.EscapeDataString(NetUtils.OAuth.ConstructRequestUrl(tokenparam.RequestURL))); //can also directly give the string.
+            //sb.Append(NetUtils.UrlEncodeRelaxed(NetUtils.OAuthUtils.ConstructRequestUrl(requestInfo.RequestURL))); //can also directly give the string.
+            sb.Append(Uri.EscapeDataString(NetUtils.OAuth.ConstructRequestUrl(requestInfo.RequestURL))); //can also directly give the string.
             sb.Append("&");
 
             //3. Append other parameters alphabetically. (Ensure all values have some value)
@@ -248,7 +240,7 @@ namespace Haley.Utils
             return sb.ToString();
         }
 
-        private Dictionary<string, string> GenerateHeaderParams(OAuth1Token tokeninfo, OAuth1TokenParam tokenparam) {
+        private Dictionary<string, string> GenerateHeaderParams(OAuth1ConsumerInfo consumerInfo, OAuth1RequestInfo requestInfo) {
 
             //As specified in Section 3.1 of RFC5849 
             var unixtimestamp = NetUtils.OAuth.GetTimeStamp();
@@ -258,31 +250,31 @@ namespace Haley.Utils
             SortedDictionary<string, string> result = new SortedDictionary<string, string>(); //Sorted information is mandatory
             //Mandatory
 
-            result.Add(RestConstants.OAuth.ConsumerKey, tokeninfo.Secret.ConsumerKey);
+            result.Add(RestConstants.OAuth.ConsumerKey, consumerInfo.Token.Key);
             result.Add(RestConstants.OAuth.Nonce, nonce);
             result.Add(RestConstants.OAuth.TimeStamp, unixtimestamp);
-            result.Add(RestConstants.OAuth.SignatureMethod, tokeninfo.SignatureType.GetDescription());
-            result.Add(RestConstants.OAuth.Version, tokeninfo.Version);
+            result.Add(RestConstants.OAuth.SignatureMethod, consumerInfo.SignatureType.GetDescription());
+            result.Add(RestConstants.OAuth.Version, consumerInfo.Version);
 
             //Optional
-            if (!string.IsNullOrWhiteSpace(tokenparam.Verifier)) {
-                result.Add(RestConstants.OAuth.Verifier, tokenparam.Verifier);
+            if (!string.IsNullOrWhiteSpace(requestInfo.Verifier)) {
+                result.Add(RestConstants.OAuth.Verifier, requestInfo.Verifier);
             }
 
-            if (!string.IsNullOrWhiteSpace(tokenparam.CallBackURL?.ToString())) {
-                result.Add(RestConstants.OAuth.Callback, tokenparam.CallBackURL.ToString());
+            if (!string.IsNullOrWhiteSpace(requestInfo.CallBackURL?.ToString())) {
+                result.Add(RestConstants.OAuth.Callback, requestInfo.CallBackURL.ToString());
             }
 
-            if (!string.IsNullOrWhiteSpace(tokenparam.SessionHandle)) {
-                result.Add(RestConstants.OAuth.SessionHandle, tokenparam.SessionHandle);
+            if (!string.IsNullOrWhiteSpace(requestInfo.SessionHandle)) {
+                result.Add(RestConstants.OAuth.SessionHandle, requestInfo.SessionHandle);
             }
 
             //Type based
 
-            switch (tokenparam.RequestType) {
+            switch (requestInfo.RequestType) {
                 case OAuthRequestType.AccessToken:
                 case OAuthRequestType.ForProtectedResource:
-                    result.Add(RestConstants.OAuth.Token, tokeninfo.Secret.TokenKey);
+                    result.Add(RestConstants.OAuth.Token, requestInfo.Token.Key);
                     break;
                 default:
                     break;
