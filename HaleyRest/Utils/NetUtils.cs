@@ -34,7 +34,6 @@ namespace Haley.Utils
                 var _pattern = new Regex("[+/=]");
                return _pattern.Replace(_random, "_");
             }
-
             public static string GetTimeStamp() {
                 //section 3.3 - RFC5849
 
@@ -42,12 +41,10 @@ namespace Haley.Utils
 
                 return GetUnixTimeStamp(DateTime.UtcNow);
             }
-
             public static string ConstructRequestUrl(string url) {
                 
                 return ConstructRequestUrl(uri:new Uri(url));
             }
-
             public static string ConstructRequestUrl(Uri uri) {
                 // Section 3.4.1.2.Base String URI
 

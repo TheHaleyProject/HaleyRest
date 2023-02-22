@@ -78,16 +78,19 @@ namespace Haley.Utils
             if (auth_param is OAuth1RequestInfo authreq) {
                 authreq.MapProperties(requestInfo); //Token is ready only, 
             }
-          
+
             //Fill the URL, Method, and parameters.
             requestInfo.RequestURL = new Uri(baseuri, request.RequestUri);
             requestInfo.Method = request.Method;
-            FillQueryParam(request,ref requestInfo);
+
+            //The query parameters should have already been added to the request by now. So extract it out so that we can prepare a Header with it.
+            ExtractQueryParams(request, ref requestInfo);
+
             //We use the request to fetch the headers and body before processing.
             return GetAuthorizationHeader(Consumer,requestInfo);
         }
 
-        private void FillQueryParam(HttpRequestMessage request,ref OAuth1RequestInfoEx param) {
+        private void ExtractQueryParams(HttpRequestMessage request,ref OAuth1RequestInfoEx param) {
             param.QueryParams = NetUtils.OAuth.ParseQueryParameters(request:request); //to ensure it is not null.
             //TODO: CONSIDER THE BODY AND ALSO THE URLCONDED FORMBODYREQUEST LATER.
         }

@@ -332,29 +332,34 @@ namespace Haley.Models
         }
         string PrepareQuery(string url, IEnumerable<RequestObject> paramList) {
             string result = url;
-            var _query = HttpUtility.ParseQueryString(string.Empty);
+            //HTTP Parse query automatically encodes/escapedatastring the values. So, if incoming value is already encoded, it is double encoded which results in inconsistencies.
+            //var _query = HttpUtility.ParseQueryString(string.Empty);
+            StringBuilder query= new StringBuilder();
+            var paramQueries = paramList.Where(p => p is IRequestQuery)?.Cast<IRequestQuery>().ToList();
+            if (paramQueries == null || paramQueries.Count == 0) return result; //return the input url
 
-            var _paramQueries = paramList.Where(p => p is IRequestQuery)?.Cast<IRequestQuery>().ToList();
-            if (_paramQueries == null || _paramQueries.Count == 0) return result; //return the input url
-
-            foreach (var param in _paramQueries) {
-                var _key = param.Key;
-                var _value = param.Value;
+            bool startFlag = true;
+            foreach (var param in paramQueries) {
+                var key = param.Key;
+                var value = param.Value;
 
                 if (param.CanEncode) {
                     //Encode before adding
                     if (param.CanEncode) {
-                        _key = Uri.EscapeDataString(_key);
-                        _value = Uri.EscapeDataString(_value);
+                        key = Uri.EscapeDataString(key);
+                        value = Uri.EscapeDataString(value);
                         param.SetEncoded(); //cannot encode again, its already encoded
                     }
                 }
-                _query[_key] = _value;
+                if (!startFlag) {
+                    query.Append("&");
+                }
+                query.Append($@"{key}={value}");
             }
 
-            var _formed_query = _query.ToString();
-            if (!string.IsNullOrWhiteSpace(_formed_query)) {
-                result = result + "?" + _formed_query;
+            var formed_query = query.ToString();
+            if (!string.IsNullOrWhiteSpace(formed_query)) {
+                result = result + "?" + formed_query;
             }
             return result;
         }
@@ -373,20 +378,20 @@ namespace Haley.Models
                         switch (rawbody.StringBodyFormat) {
                             case StringContentFormat.Json:
                                 if (!rawbody.IsSerialized) {
-                                    _serialized_content = rawbody.ToJson(_jsonConverters?.Values?.ToList());
+                                    _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
                                 }
                                 mediatype = "application/json";
                                 break;
 
                             case StringContentFormat.XML:
                                 if (!rawbody.IsSerialized) {
-                                    _serialized_content = rawbody.ToXml().ToString();
+                                    _serialized_content = rawbody.Value.ToXml().ToString();
                                 }
                                 mediatype = "application/xml";
                                 break;
                             case StringContentFormat.PlainText:
                                 if (!rawbody.IsSerialized) {
-                                    _serialized_content = rawbody.ToJson(_jsonConverters?.Values?.ToList());
+                                    _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
                                 }
                                 mediatype = "text/plain";
                                 break;
