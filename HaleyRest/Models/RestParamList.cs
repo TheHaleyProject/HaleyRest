@@ -108,16 +108,7 @@ namespace Haley.Models {
                 sb.Append(kvp_merger);
                 //value
                 if (encodevalues && item.CanEncode) {
-                    //the value should only be encoded once.
-                    bool isEncoded = true; //Assuming everything is already encoded.
-                    var workingValue = item.Value;
-
-                    //It is very important to note that we should not end up with double encoding. So, we first remove any previous encodings and then encode again.
-                    while (isEncoded) {
-                        isEncoded = Uri.UnescapeDataString(workingValue) != workingValue; //
-                        if (isEncoded) workingValue = Uri.UnescapeDataString(workingValue);
-                    }
-                    sb.Append(Uri.EscapeDataString(workingValue));
+                    sb.Append(NetUtils.SingleEncode(item.Value));
                     item.SetEncoded();
                 }
                 else {

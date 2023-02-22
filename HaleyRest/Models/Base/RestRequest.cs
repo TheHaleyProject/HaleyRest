@@ -344,12 +344,10 @@ namespace Haley.Models
                 var value = param.Value;
 
                 if (param.CanEncode) {
-                    //Encode before adding
-                    if (param.CanEncode) {
-                        key = Uri.EscapeDataString(key);
-                        value = Uri.EscapeDataString(value);
-                        param.SetEncoded(); //cannot encode again, its already encoded
-                    }
+                    //Don't double encode
+                    key = NetUtils.SingleEncode(key);  
+                    value = NetUtils.SingleEncode(value);
+                    param.SetEncoded(); //cannot encode again, its already encoded
                 }
                 if (!startFlag) {
                     query.Append("&");

@@ -143,6 +143,19 @@ namespace Haley.Utils
             return totalseconds.ToString();
         }
 
+        public static string SingleEncode(string input) {
+            bool isEncoded = true; //Assuming everything is already encoded.
+            var workingValue = input;
+
+            //It is very important to note that we should not end up with double encoding. So, we first remove any previous encodings and then encode again.
+            while (isEncoded) {
+                isEncoded = Uri.UnescapeDataString(workingValue) != workingValue; //
+                if (isEncoded) workingValue = Uri.UnescapeDataString(workingValue);
+            }
+
+            return Uri.EscapeDataString(workingValue); //This gives a proper single Encode
+        }
+
         //BELOW PARTS FROM REST SHARP
 
         #region Rest Sharp(nuget) / OAuth(Nuget) Methods
