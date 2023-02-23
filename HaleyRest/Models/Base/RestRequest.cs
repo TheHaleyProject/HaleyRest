@@ -353,6 +353,7 @@ namespace Haley.Models
                     query.Append("&");
                 }
                 query.Append($@"{key}={value}");
+                if (startFlag) startFlag= false; //once started start flag is always false.
             }
 
             var formed_query = query.ToString();
