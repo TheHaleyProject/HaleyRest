@@ -284,7 +284,6 @@ namespace Haley.Models
         #endregion
 
         #region Helpers
-
         private void ValidateClient() {
             if (Client == null) throw new ArgumentNullException(nameof(Client));
         }
@@ -335,20 +334,15 @@ namespace Haley.Models
             //HTTP Parse query automatically encodes/escapedatastring the values. So, if incoming value is already encoded, it is double encoded which results in inconsistencies.
             //var _query = HttpUtility.ParseQueryString(string.Empty);
             StringBuilder query= new StringBuilder();
-            var paramQueries = paramList.Where(p => p is IRequestQuery)?.Cast<IRequestQuery>().ToList();
+            var paramQueries = paramList.Where(p => p is IRequestQuery)?.Cast<IRequestQuery>().ToList(); //Of all the request objects, get only the request queries.
             if (paramQueries == null || paramQueries.Count == 0) return result; //return the input url
 
             bool startFlag = true;
             foreach (var param in paramQueries) {
-                var key = param.Key;
-                var value = param.Value;
+                //if something is marked as the decodedoutput, then it should not be further decoded.(Like it should not be URL
+                var key = NetUtils.URLSingleEncode(param.Key, param.IsURLDecoded? param.Key : null); 
+                var value = NetUtils.URLSingleEncode(param.Value, param.IsURLDecoded ? param.Value : null); 
 
-                if (param.CanEncode) {
-                    //Don't double encode
-                    key = NetUtils.SingleEncode(key);  
-                    value = NetUtils.SingleEncode(value);
-                    param.SetEncoded(); //cannot encode again, its already encoded
-                }
                 if (!startFlag) {
                     query.Append("&");
                 }
@@ -360,6 +354,8 @@ namespace Haley.Models
             if (!string.IsNullOrWhiteSpace(formed_query)) {
                 result = result + "?" + formed_query;
             }
+
+            //The final formed query will be properly URLSingleEncoded
             return result;
         }
         HttpContent PrepareRawBody(RawBodyRequest rawbody) {
@@ -462,7 +458,6 @@ namespace Haley.Models
                 return null;
             }
         }
-
         HttpContent PrepareFormEncodedBody(FormEncodedRequest formbody) {
             try {
                 return new StringContent(formbody.GetEncodedBodyContent(), null, "application/x-www-form-urlencoded");
@@ -559,7 +554,5 @@ namespace Haley.Models
         {
             return this.URL;
         }
-
-       
     }
 }

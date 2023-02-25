@@ -5,11 +5,11 @@ VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HaleyRest", "HaleyRest\HaleyRest.csproj", "{4B25C6F3-CEC9-4D15-8463-17C77F9AC86F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HaleyRest.ConsoleTest", "HaleyRest.Console\HaleyRest.ConsoleTest.csproj", "{0B1E30C6-30F4-4302-9674-3CD51FB819B8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HaleyRest.ConsoleTest", "__Test\HaleyRest.Console\HaleyRest.ConsoleTest.csproj", "{0B1E30C6-30F4-4302-9674-3CD51FB819B8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestExamples", "RestExamples\RestExamples.csproj", "{E84B8944-B1C3-4FB1-BDCE-EDD593E5AF58}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestExamples", "__Test\RestExamples\RestExamples.csproj", "{E84B8944-B1C3-4FB1-BDCE-EDD593E5AF58}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HTTPClientTester", "HTTPClientTester\HTTPClientTester.csproj", "{01BEB98D-7A07-4BCE-9766-905D652DD185}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HTTPClientTester", "__Test\HTTPClientTester\HTTPClientTester.csproj", "{01BEB98D-7A07-4BCE-9766-905D652DD185}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Haley.Enums;
 using Haley.Abstractions;
 using System.Net;
+using Haley.Utils;
 
 namespace Haley.Models
 {
@@ -14,8 +15,8 @@ namespace Haley.Models
         public new IList<QueryParam> Value => base.Value as IList<QueryParam>;
 
         public string GetEncodedBodyContent() {
-            var encoded = Value?.Select(p => $"{WebUtility.UrlEncode(p.Key)}={WebUtility.UrlEncode(p.Value)}");
-            //*.Replace("%20", "+") */
+
+            var encoded = Value?.Select(p => $"{NetUtils.URLSingleEncode(p.Key, p.IsURLDecoded ? p.Key : null)}={NetUtils.URLSingleEncode(p.Value, p.IsURLDecoded ? p.Value : null)}");
             return string.Join("&", encoded);
         }
 

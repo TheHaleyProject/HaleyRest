@@ -57,70 +57,68 @@ namespace Haley.Utils
                 var normUrl = string.Format("{0}://{1}", uri.Scheme, uri.Host);
                 if (!(uri.Scheme == "http" && uri.Port == 80 ||
                       uri.Scheme == "https" && uri.Port == 443))
-                    normUrl += ":" + uri.Port;
+                    normUrl += ":" + uri.Port; //add port only if not the default 80 / 443
 
-                normUrl += uri.AbsolutePath;
+                normUrl += uri.AbsolutePath; //Path without the query params
                 return normUrl;
-            }
-
-            public static Dictionary<string,string> ParseQueryParameters(HttpRequestMessage request, bool? url_decode = null, string ignore_prefix = "oauth_") {
-                string query = String.Empty;
-                if (request.RequestUri.IsAbsoluteUri) {
-                    query = request.RequestUri.Query;
-                } else {
-                    var relative_url = request.RequestUri.ToString();
-                    int idx = relative_url.IndexOf('?');
-                    query = idx >= 0 ? relative_url.Substring(idx) : ""; //If there is no question mark, we don't have any parameter for the query
-                }
-                return ParseQueryParameters(query_string: query,url_decode:url_decode, ignore_prefix:ignore_prefix);
-            }
-
-            public static Dictionary<string, string> ParseQueryParameters(string query_string, bool? url_decode = null,string ignore_prefix = "oauth_") {
-                var result = new Dictionary<string, string>();
-
-                if (string.IsNullOrWhiteSpace(query_string)) return result;
-
-                var queryString = query_string;
-                if (queryString.StartsWith("?"))
-                    queryString = queryString.Remove(0, 1);
-
-                foreach (var qpair in queryString.Split('&')) {
-                    if (!string.IsNullOrEmpty(qpair)) {
-                        if (!string.IsNullOrWhiteSpace(ignore_prefix) && qpair.StartsWith(ignore_prefix)) continue;
-
-                        //because oauth_ protocols are added separately
-                        if (qpair.IndexOf('=') > -1) {
-                            var temp = qpair.Split('=');
-
-                            var _key = temp[0];
-                            var _value = temp[1];
-
-                            if (url_decode.HasValue && url_decode.Value) {
-                                _key = string.IsNullOrWhiteSpace(_key) ? "" : Uri.UnescapeDataString(_key);
-                                _value = string.IsNullOrWhiteSpace(_value) ? "" : Uri.UnescapeDataString(_value);
-                            }
-                            result.Add(_key,_value);
-                        }
-                        else {
-                            var _key = qpair;
-
-                            if (url_decode.HasValue && url_decode.Value) {
-                                _key = string.IsNullOrWhiteSpace(_key) ? "" : Uri.UnescapeDataString(_key);
-                            }
-                            result.Add(_key, string.Empty);
-                        }
-                    }
-                }
-                return result;
             }
         }
 
-        internal static readonly string[] UriRfc3986CharsToEscape = { "!", "*", "'", "(", ")" };
-        internal static readonly string[] UriRfc3968EscapedHex = { "%21", "%2A", "%27", "%28", "%29" };
-        internal const string Digit = "1234567890";
-        internal const string Alphabets = "abcdefghijklmnopqrstuvwxyz";
-        internal const string AlphabetsUpper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        internal const string Unreserved = AlphabetsUpper + Alphabets + Digit + "-._~";
+        public static List<QueryParam> ParseQueryParameters(HttpRequestMessage request, string ignore_prefix = null) {
+            string query = String.Empty;
+            if (request.RequestUri.IsAbsoluteUri) {
+                query = request.RequestUri.Query;
+            } else {
+                var relative_url = request.RequestUri.ToString();
+                int idx = relative_url.IndexOf('?');
+                query = idx >= 0 ? relative_url.Substring(idx) : ""; //If there is no question mark, we don't have any parameter for the query
+            }
+            return ParseQueryParameters(query_string: query, ignore_prefix: ignore_prefix);
+        }
+
+        public static async Task<List<QueryParam>> ParseFormEncodedParameters(HttpRequestMessage request, string ignore_prefix = null) {
+            if (!request.Headers.TryGetValues("Content-Type", out var values)) return null;
+            if (values.First() != "application/x-www-form-urlencoded") return null;
+            if (request.Content == null) return null;
+            //If the value is form url encoded, then try to get the values and extract them as query parameters.
+            var content = await request.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(content)) return null;
+
+            return ParseQueryParameters(query_string: content, ignore_prefix: ignore_prefix);
+        }
+
+        public static List<QueryParam> ParseQueryParameters(string query_string, string ignore_prefix = null) {
+            var result = new List<QueryParam>();
+
+            if (string.IsNullOrWhiteSpace(query_string)) return result;
+
+            var queryString = query_string;
+            if (queryString.StartsWith("?"))
+                queryString = queryString.Remove(0, 1);
+
+            foreach (var qpair in queryString.Split('&')) {
+                if (!string.IsNullOrEmpty(qpair)) {
+
+                    //First ignore the prefixes (if available)
+                    if (!string.IsNullOrWhiteSpace(ignore_prefix) && qpair.StartsWith(ignore_prefix)) continue;
+
+                    //because oauth_ protocols are added separately
+                    if (qpair.IndexOf('=') > -1) {
+                        var temp = qpair.Split('=');
+
+                        var _key = temp[0];
+                        var _value = temp[1];
+
+                        result.Add(new QueryParam(_key, _value));
+                    } else {
+                        var _key = qpair;
+                        result.Add(new QueryParam(_key, string.Empty));
+                    }
+                }
+            }
+            return result;
+        }
+
         public static string DownloadFromWeb(string download_link, string file_name) {
             try {
                 string _path = null;
@@ -143,22 +141,35 @@ namespace Haley.Utils
             return totalseconds.ToString();
         }
 
-        public static string SingleEncode(string input) {
+        public static string URLSingleEncode(string input,string expectedDecodedValue = null) {
             bool isEncoded = true; //Assuming everything is already encoded.
             var workingValue = input;
 
+            //WHY ExpectedDecodeValue ? => Sometimes, the input itself is meant to have "%23" which is part of the actual string. But when we try to singleencode, we end up decoding that %23 to # which is wrong. So, when we know that there is a expected decoded value, we setit up.
+
             //It is very important to note that we should not end up with double encoding. So, we first remove any previous encodings and then encode again.
             while (isEncoded) {
-                isEncoded = Uri.UnescapeDataString(workingValue) != workingValue; //
+                //If we have a stopcheck value, first compare that
+                if (expectedDecodedValue != null && workingValue == expectedDecodedValue) {
+                    //Stopvalue is to ensure that we might have some kind of encoding (which is already needed and should not be decoded further)
+                    isEncoded = false;
+                    break; //do not check further.
+                }
+
+                isEncoded = (Uri.UnescapeDataString(workingValue) != workingValue); //If unescaped value and working value are same, then it is no longer encoded. we have reached the end.
                 if (isEncoded) workingValue = Uri.UnescapeDataString(workingValue);
             }
 
-            return Uri.EscapeDataString(workingValue); //This gives a proper single Encode
+            //Uri.EscapeDataString is similar to 
+
+            return Uri.EscapeDataString(workingValue); //This gives a proper single Encode over the expected decoded value.
         }
 
         //BELOW PARTS FROM REST SHARP
-
         #region Rest Sharp(nuget) / OAuth(Nuget) Methods
+
+        internal static readonly string[] UriRfc3986CharsToEscape = { "!", "*", "'", "(", ")" };
+        internal static readonly string[] UriRfc3968EscapedHex = { "%21", "%2A", "%27", "%28", "%29" };
         public static string UrlEncodeRelaxed(string value) {
             // Escape RFC 3986 chars first.
             var escapedRfc3986 = new StringBuilder(value);
@@ -181,21 +192,6 @@ namespace Haley.Utils
         /// Namely, percent encoding with [RFC3986], avoiding unreserved characters,
         /// upper-casing hexadecimal characters, and UTF-8 encoding for text value pairs.
         /// </summary>
-        public static string UrlEncodeStrict(string value)
-            => string.Join("", value.Select(x => Unreserved.Contains(x) ? x.ToString() : $"%{(byte)x:X2}"));
-
-        public static string ConstructRequestUrl(Uri uri) {
-            if (uri == null) {
-                throw new ArgumentNullException("url");
-            }
-            var normUrl = string.Format("{0}://{1}", uri.Scheme, uri.Host);
-            if (!(uri.Scheme == "http" && uri.Port == 80 ||
-                  uri.Scheme == "https" && uri.Port == 443))
-                normUrl += ":" + uri.Port;
-
-            normUrl += uri.AbsolutePath;
-            return normUrl;
-        }
         #endregion
     }
 }

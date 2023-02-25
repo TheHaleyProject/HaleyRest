@@ -12,7 +12,7 @@ namespace Haley.Models
         //public IEnumerable<RequestParam> Parameters { get; set; }
         //public void SetAllEncoded() {
         //  if(Parameters != null) {
-        //        Parameters.ToList()?.ForEach(p => p.SetEncoded());
+        //        Parameters.ToList()?.ForEach(p => p.SetAsURLDecoded());
         //    }
         //}
 

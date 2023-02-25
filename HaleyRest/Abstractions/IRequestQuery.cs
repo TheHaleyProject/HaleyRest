@@ -20,7 +20,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Haley.Abstractions
 {
-    public interface IRequestQuery : IEncode<IRequestQuery> {
+    public interface IRequestQuery : ISetURLDecoded<IRequestQuery> {
         string Key { get; }
         string Value { get;  }
     }

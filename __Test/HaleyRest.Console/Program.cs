@@ -8,23 +8,45 @@ using Haley.Abstractions;
 using Haley.Enums;
 using System.Threading;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace HaleyRest.ConsoleTest
 {
     class Program
     {
-        static void Main(string[] args)
+        static  void Main(string[] args)
         {
-            Console.WriteLine("Hello World");
-            prepareClients();
-            Test().Wait();
+            Console.WriteLine( CDETest().Result);
+           
+            //var str = "https://jsonplaceholder.typicode.com";
+            //var str2 = @"%23helloworld12342!#P(*!U!@))#@)$!)!~$@514988!@3";
+            //Console.WriteLine(NetUtils.URLSingleEncode(str));
+
+            //Console.WriteLine(NetUtils.URLSingleEncode(str2));
+            //Console.WriteLine(NetUtils.URLSingleEncode(Uri.EscapeUriString(str2),str2));
+            //Console.WriteLine("Hello World");
+            //prepareClients();
+            //Test().Wait();
+        }
+
+        async static Task<bool> CDETest() {
+            var client = new FluentClient(@"");
+            client.SetAuthenticator(new OAuth1Provider("4579bfc5-0671-4087-bed3-00a41b5cff8c", "f292-3177-e0b1-22ae-e253-5bfd-dbec-84d5"));
+
+            //Get Request Token
+            var _res = await (await client
+                .WithEndPoint(@"api/services/simple_search?klang=%28t%3Ashare%29%3B%28creatingcompanyname%3Aasg%2A%29&page=2")
+                .SetAuthParam(new OAuth1RequestInfo(new OAuthToken("a4f7f643-4626-4d22-9986-e29a891e5600", "e95d-5faf-d033-36f9-a38b-50c4-b0bc-4e77"), OAuthRequestType.AccessToken))
+                .GetAsync()).AsStringResponseAsync();
+
+            return true;
         }
 
         static void prepareClients()
         {
-            ClientStore.AddClient(clientNames.jsonplaceHolder, @"https://jsonplaceholder.typicode.com");
-            ClientStore.AddClient(clientNames.gorest, @"https://gorest.co.in/");
-            ClientStore.AddClient(clientNames.publicAPI, @"https://api.publicapis.org");
+            ClientStore.AddClient(clientNames.jsonplaceHolder, new FluentClient(@"https://jsonplaceholder.typicode.com"));
+            ClientStore.AddClient(clientNames.gorest, new FluentClient(@"https://gorest.co.in/"));
+            ClientStore.AddClient(clientNames.publicAPI,  new FluentClient( @"https://api.publicapis.org"));
         }
 
         static async Task Test()
@@ -60,16 +82,12 @@ namespace HaleyRest.ConsoleTest
             try
             {
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.BlockClient(message).GetAsync(url);
+                var _response = await _client.WithEndPoint(url).GetAsync();
                 return _response;
             }
             catch (Exception ex)
             {
                 throw;
-            }
-            finally
-            {
-                _client.UnBlockClient(message);
             }
         }
         static async Task<IResponse> apiTest2(clientNames name, string url, string message)
@@ -80,7 +98,7 @@ namespace HaleyRest.ConsoleTest
                 Dictionary<string, string> _params = new Dictionary<string, string>();
                 _params.Add("category", "animals");
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.BlockClient(5, message).GetByParamsAsync(url,_params.ToRequestParams(true));
+                var _response = await _client.WithEndPoint(url).WithParameters(_params.Select(p => new QueryParam(p.Key, p.Value))).GetAsync(); 
                 return _response;
             }
             catch (Exception ex)
@@ -95,7 +113,7 @@ namespace HaleyRest.ConsoleTest
             try
             {
                 Console.WriteLine($@"Calling {name}");
-                var _response = await _client.BlockClient(6, message).SendObjectAsync(url,new QueryParam("auth","null",true),Method.GET);
+                var _response = await _client.WithEndPoint(url).WithQuery(new QueryParam("auth", "null")).GetAsync(); 
                 return _response;
             }
             catch (Exception ex)
