@@ -19,6 +19,6 @@ namespace Haley.Abstractions
     /// </list>
     /// </summary>
     public interface IAuthParam {
-        object[] Arguments { get; }
+       
     }
 }

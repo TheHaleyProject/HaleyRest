@@ -245,24 +245,13 @@ namespace Haley.Models
         internal async Task<IResponse> SendAsync(HttpRequestMessage request) {
             this._request = request;
             ValidateClient();
-
-            //If Donot authenticate this request, then ignore all auth methods (may be the user has directly added the auth header)
-            if (!_prevent_authentication) {
-                //Authorization should happen only here because we would only add all query params before this stage.
-                if (_request.Headers.Contains(RestConstants.Headers.Authorization)) {
-                    _request.Headers.Remove(RestConstants.Headers.Authorization);
-                }
-
-                //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
-                _request.Headers.TryAddWithoutValidation(RestConstants.Headers.Authorization, GetAuthValue(this, _request));
-            }
-            
+            HandleAuthorization();
 
             var _validationCB = Client.GetRequestValidation();
 
             //if some sort of validation callback is assigned, then call that first.
             if (_validationCB != null) {
-                var validation_check = await _validationCB.Invoke(request);
+                var validation_check = await _validationCB.Invoke(_request);
                 if (!validation_check) {
                     WriteLog(LogLevel.Information, "Local request validation failed. Please verify the validation methods to return true on successful validation");
                     return new BaseResponse(null).SetMessage("Internal Request Validation call back failed.");
@@ -272,10 +261,10 @@ namespace Haley.Models
             //Here we donot modify anything. We just send and receive the response.
             HttpResponseMessage message;
             if (_cancellation_token != null) {
-                message = await Client.BaseClient.SendAsync(request, _cancellation_token.Value);
+                message = await Client.BaseClient.SendAsync(_request, _cancellation_token.Value);
             }
             else {
-                message = await Client.BaseClient.SendAsync(request);
+                message = await Client.BaseClient.SendAsync(_request);
             }
 
             return new BaseResponse(message);
@@ -284,6 +273,24 @@ namespace Haley.Models
         #endregion
 
         #region Helpers
+        void HandleAuthorization() {
+            //If Donot authenticate this request, then ignore all auth methods (may be the user has directly added the auth header)
+            if (_prevent_authentication) return;
+
+            string headerName = RestConstants.Headers.Authorization;
+            var authenticator = FetchAuthenticator(this);
+            if (authenticator is APIKeyProvider keyProvider) {
+                headerName = keyProvider.GetKey();
+            }
+
+            //Authorization should happen only here because we would only add all query params before this stage.
+            if (_request.Headers.Contains(headerName)) {
+                _request.Headers.Remove(headerName);
+            }
+
+            //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
+            _request.Headers.TryAddWithoutValidation(headerName, GetAuthValue(this, _request));
+        }
         private void ValidateClient() {
             if (Client == null) throw new ArgumentNullException(nameof(Client));
         }
