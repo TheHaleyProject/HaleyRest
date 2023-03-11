@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Haley.Extensions" Version="2.1.12" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1587.40" />
   </ItemGroup>
 
 	<Import Project="$(SolutionDir)ProjectReferences_$(SolutionName).txt" Condition="Exists('$(SolutionDir)ProjectReferences_$(SolutionName).txt')" />

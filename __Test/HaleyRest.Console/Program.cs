@@ -9,15 +9,19 @@ using Haley.Enums;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
+using System.Web;
+using Microsoft.Web.WebView2.Wpf;
+using Microsoft.Web.WebView2.WinForms;
 
 namespace HaleyRest.ConsoleTest
 {
     class Program
     {
+        [STAThread]
         static  void Main(string[] args)
         {
-            Console.WriteLine( CDETest().Result);
-           
+            //Console.WriteLine( CDETest().Result);
+            var res = GoogleTest().Result;
             //var str = "https://jsonplaceholder.typicode.com";
             //var str2 = @"%23helloworld12342!#P(*!U!@))#@)$!)!~$@514988!@3";
             //Console.WriteLine(NetUtils.URLSingleEncode(str));
@@ -27,6 +31,23 @@ namespace HaleyRest.ConsoleTest
             //Console.WriteLine("Hello World");
             //prepareClients();
             //Test().Wait();
+        }
+
+        async static Task<bool> GoogleTest() {
+            var client = new FluentClient();
+            var result = await client
+                .WithEndPoint("https://accounts.google.com/o/oauth2/v2/auth")
+                .WithQueries(new List<QueryParam>() {
+                    new QueryParam("client_id",""),
+                    new QueryParam("redirect_uri","http://localhost:9500/api/authorise"),
+                    new QueryParam("response_type","code"),
+                    new QueryParam("scope","https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file")})
+                .GetAsync();
+            var resultstr = await result.AsStringResponseAsync();
+            if (resultstr.IsSuccessStatusCode) {
+
+            }
+            return true;
         }
 
         async static Task<bool> CDETest() {
@@ -106,7 +127,6 @@ namespace HaleyRest.ConsoleTest
                 throw;
             }
         }
-
         static async Task<IResponse> apiTest3(clientNames name, string url, string message)
         {
             var _client = ClientStore.GetClient(name);

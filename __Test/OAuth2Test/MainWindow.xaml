@@ -1,0 +1,75 @@
+﻿<hw:PlainWindow x:Class="OAuth2Test.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:OAuth2Test"
+        xmlns:hw="http://schemas.hpod9.com/haley/wpf"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="700" Width="550" HideMinimizeButton="True" HideMaximizeButton="True" ControlBoxStyle="Mac" CornerRadius="20" HideFooter="True" ClipBorder="True" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1" >
+                <GradientStop Color="#FF94DAFF"/>
+                <GradientStop Color="#FFFFF79B" Offset="0.65"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+        <Grid Height="350" Width="320" >
+            <Border Background="White" CornerRadius="20" Padding="10">
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="0" BlurRadius="8" Opacity="0.5"/>
+                </Border.Effect>
+                <Grid  Margin="0 40 0 0">
+                    <StackPanel>
+                        <Grid Height="35" Margin="0 5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <hw:Image Source="{hw:Img FA=user_ninja_solid}" Height="30" Fill="DarkSlateGray" />
+                            <hw:PlainTextBox Grid.Column="1" WaterMark="User Name" BorderBrush="#B2A5A5A5"  BorderThickness="0.75" Height="30" Background="White" FontSize="14" />
+                        </Grid>
+
+                        <Grid Height="35" Margin="0 5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="50"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <hw:Image Source="{hw:Img FA=lock_solid}" Height="30" Fill="DarkSlateGray" />
+                            <hw:PlainPasswordBox Grid.Column="1" WaterMark="Password" BorderBrush="#B2A5A5A5"  BorderThickness="0.75" Height="30" PasswordChar="*" FontSize="14"/>
+                        </Grid>
+
+                        <Grid Margin="0 10">
+                            <StackPanel>
+                                <hw:LinkedText HorizontalAlignment="Left" Text="Sign up" Margin="0,5"/>
+                                <hw:LinkedText HorizontalAlignment="Left" Text="Forgot password"/>
+                            </StackPanel>
+                            <hw:ComboButton hw:Icon.Default="{hw:Img FA=arrow_up_left_from_circle_solid}" hw:Icon.RotateAngle="135"  Height="35" Margin="0 5" ImageLocation="Left" Width="120" HorizontalAlignment="Right" CornerRadius="10" Background="#FF54B56C" hw:Icon.DefaultColor="White" Padding="5" Content="LOG IN" Foreground="White"    HorizontalContentAlignment="Left" FontSize="16"/>
+                        </Grid>
+
+                        <hw:Separator Margin="10 20" Background="#B250585D" Size="1"/>
+
+                        <StackPanel Height="55" Orientation="Horizontal" Margin="15,0" HorizontalAlignment="Center">
+                            <hw:ComboButton Margin="4" CornerRadius="5" hw:Icon.Default="{hw:Img Brand=brand_google}" Content="Google" ImageLocation="Top" Background="#FF4196B3" hw:Icon.DefaultColor="White" Foreground="White" Padding="10 3" Command="{Binding CmdGoogleLogin}"/>
+                            <hw:ComboButton Margin="4" CornerRadius="5" hw:Icon.Default="{hw:Img Brand=brand_github}" Content="GitHub" ImageLocation="Top" Background="#FF4196B3" hw:Icon.DefaultColor="White" Foreground="White" Padding="10 3"/>
+                            <hw:ComboButton Margin="4" CornerRadius="5" hw:Icon.Default="{hw:Img Brand=brand_twitter}" Content="Twitter" ImageLocation="Top" Background="#FF4196B3" hw:Icon.DefaultColor="White" Foreground="White" Padding="10 3"/>
+                        </StackPanel>
+                        
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <Border Background="#FF409DF3" CornerRadius="50" Height="80" Width="80" VerticalAlignment="Top" Margin="-40" Padding="5">
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="0" BlurRadius="8" Opacity="0.5"/>
+                </Border.Effect>
+                <hw:Image Margin="10" Fill="white" Source="{hw:Img FA=key_solid}">
+                    <hw:Image.Effect>
+                        <DropShadowEffect ShadowDepth="0" BlurRadius="5" Opacity="0.5" Color="Red"/>
+                    </hw:Image.Effect>
+                </hw:Image>
+            </Border>
+        </Grid>
+
+
+    </Grid>
+</hw:PlainWindow>

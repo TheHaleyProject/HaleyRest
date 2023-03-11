@@ -89,7 +89,14 @@ namespace Haley.Models
             return this;
         }
         public override IRequest WithEndPoint(string resource_url_endpoint) {
-            URL = ParseURI(resource_url_endpoint).pathQuery; //What if we needed to use full URL?
+            if (Client != null && string.IsNullOrWhiteSpace(Client.URL)) {
+                //Client's base URL is empty.
+                //Do not try to set the clients url because it could be deliberate. In next call, endpoint might contain full URL again.
+                URL = resource_url_endpoint; //Rest URL
+                return this;
+            }
+
+            URL = ParseURI(resource_url_endpoint).pathQuery; 
             return this;
         }
 
@@ -152,6 +159,7 @@ namespace Haley.Models
 
         private string GetAuthValue(IRestBase source,HttpRequestMessage request) {
             var authenticator = FetchAuthenticator(this);
+            if (authenticator == null) return null;
             var authparam = FetchAuthParam(this);
             //When calling the authenticator from internally, let's also add url_decode because we know that we are already encoding (Uri.EscapeDataString) the query parameters (both Key and value).
             //"true" after authparam is for url_decode
@@ -204,7 +212,7 @@ namespace Haley.Models
             var resource_Url = uri_components.pathQuery;
 
             if (string.IsNullOrWhiteSpace(Client.URL)) { //if the client url is empty, then we conside the request url
-                resource_Url = URL; //Take the full url, irrespective of whatever is provided, assuming that the URL is absolute.
+                resource_Url = url; //Take the full url, irrespective of whatever is provided, assuming that the URL is absolute.
             }
 
             //SET REQUEST PROPERTY VALUE
@@ -279,6 +287,8 @@ namespace Haley.Models
 
             string headerName = RestConstants.Headers.Authorization;
             var authenticator = FetchAuthenticator(this);
+            if (authenticator == null) return; // no need to check further.
+
             if (authenticator is APIKeyProvider keyProvider) {
                 headerName = keyProvider.GetKey();
             }
@@ -289,7 +299,12 @@ namespace Haley.Models
             }
 
             //_request.Headers.Authorization = new AuthenticationHeaderValue("OAuth", GetAuthValue(this, _request)); //if the input is not correct, for instance, 
-            _request.Headers.TryAddWithoutValidation(headerName, GetAuthValue(this, _request));
+
+            var authHeader = GetAuthValue(this, _request);
+
+            if (!string.IsNullOrWhiteSpace(authHeader)) {
+                _request.Headers.TryAddWithoutValidation(headerName, authHeader);
+            }
         }
         private void ValidateClient() {
             if (Client == null) throw new ArgumentNullException(nameof(Client));
