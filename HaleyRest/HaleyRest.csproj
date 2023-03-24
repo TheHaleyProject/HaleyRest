@@ -16,7 +16,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Product>Haley Helpers</Product>
     <PackageId>Haley.Rest</PackageId>
-    <Version>2.0.6.2</Version>
+    <Version>2.0.6.3</Version>
     <PackageProjectUrl>https://github.com/TheHaleyProject/HaleyRest</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rmsmech/HaleyRest</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -54,7 +54,7 @@
   </ItemGroup>
 
 <Import Project="$(SolutionDir)ProjectReferences_$(SolutionName).txt" Condition="Exists('$(SolutionDir)ProjectReferences_$(SolutionName).txt')" />
-	<Choose>
+	<!--<Choose>
     <When Condition="Exists($(HaleyExtensions))">
       <ItemGroup>
         <ProjectReference Include="$(HaleyExtensions)\HaleyExtensions.csproj">
@@ -62,12 +62,8 @@
         </ProjectReference>
       </ItemGroup>
     </When>
-    <Otherwise>
-     <ItemGroup>
-       <PackageReference Include="Haley.Extensions" Version="2.1.15.2" />
-	 </ItemGroup>
-    </Otherwise>
-</Choose>
+    <Otherwise />
+</Choose>-->
   <Choose>
     <When Condition="Exists($(HaleyHelpers))">
       <ItemGroup>
@@ -78,7 +74,7 @@
     </When>
     <Otherwise>
       <ItemGroup>
-        <PackageReference Include="Haley.Helpers" Version="2.1.9" />
+        <PackageReference Include="Haley.Helpers" Version="2.1.9.4" />
       </ItemGroup>
     </Otherwise>
   </Choose>
