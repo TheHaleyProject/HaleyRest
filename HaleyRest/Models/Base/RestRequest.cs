@@ -268,13 +268,16 @@ namespace Haley.Models
 
             //Here we donot modify anything. We just send and receive the response.
             HttpResponseMessage message;
-            if (_cancellation_token != null) {
-                message = await Client.BaseClient.SendAsync(_request, _cancellation_token.Value);
-            }
-            else {
-                message = await Client.BaseClient.SendAsync(_request);
-            }
+            try {
+                if (_cancellation_token != null) {
+                    message = await Client.BaseClient.SendAsync(_request, _cancellation_token.Value);
+                } else {
+                    message = await Client.BaseClient.SendAsync(_request);
+                }
+            } catch (Exception ex) {
 
+                throw ex;
+            }
             return new BaseResponse(message);
         }
         
