@@ -32,7 +32,7 @@ namespace Haley.Models
     /// </summary>
     public sealed class FluentClient :RestBase, IClient
     {
-        public HttpClient BaseClient { get;  }
+        public HttpClient BaseClient { get; private set; }
         public string FriendlyName { get; set; }
 
         #region Attributes
@@ -64,6 +64,17 @@ namespace Haley.Models
         public FluentClient(string base_address) : this(base_address, "Fluent Client", null) { }
         public FluentClient() : this(string.Empty, "Fluent Client", null) { }
 
+        public FluentClient SetHandler(HttpClientHandler handler, bool disposehandler = true) {
+            if (handler != null) {
+                //our client might already have the base address setup in the constructor.
+                //So fetch that first
+                var targetBaseAddress = BaseClient.BaseAddress;
+                var newclient = new HttpClient(handler, disposehandler);
+                newclient.BaseAddress = targetBaseAddress;
+                BaseClient = newclient; 
+            }
+            return this;
+        }
         #endregion
 
         public override string ToString()
