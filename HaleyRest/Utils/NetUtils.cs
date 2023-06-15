@@ -164,34 +164,5 @@ namespace Haley.Utils
 
             return Uri.EscapeDataString(workingValue); //This gives a proper single Encode over the expected decoded value.
         }
-
-        //BELOW PARTS FROM REST SHARP
-        #region Rest Sharp(nuget) / OAuth(Nuget) Methods
-
-        internal static readonly string[] UriRfc3986CharsToEscape = { "!", "*", "'", "(", ")" };
-        internal static readonly string[] UriRfc3968EscapedHex = { "%21", "%2A", "%27", "%28", "%29" };
-        public static string UrlEncodeRelaxed(string value) {
-            // Escape RFC 3986 chars first.
-            var escapedRfc3986 = new StringBuilder(value);
-
-            for (var i = 0; i < UriRfc3986CharsToEscape.Length; i++) {
-                var t = UriRfc3986CharsToEscape[i];
-
-                escapedRfc3986.Replace(t, UriRfc3968EscapedHex[i]);
-            }
-
-            // Do RFC 2396 escaping by calling the .NET method to do the work.
-            var escapedRfc2396 = Uri.EscapeDataString(escapedRfc3986.ToString());
-
-            // Return the fully-RFC3986-escaped string.
-            return escapedRfc2396;
-        }
-
-        /// <summary>
-        /// URL encodes a string based on section 5.1 of the OAuth spec.
-        /// Namely, percent encoding with [RFC3986], avoiding unreserved characters,
-        /// upper-casing hexadecimal characters, and UTF-8 encoding for text value pairs.
-        /// </summary>
-        #endregion
     }
 }
