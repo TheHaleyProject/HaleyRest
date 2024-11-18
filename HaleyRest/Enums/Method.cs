@@ -11,6 +11,8 @@ namespace Haley.Enums
        GET,
        POST,
        DELETE,
-       PUT
+       PUT,
+       PATCH,
+       HEAD
     }
 }

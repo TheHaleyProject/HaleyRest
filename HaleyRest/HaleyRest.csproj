@@ -8,7 +8,7 @@
     <RootNamespace>Haley.Rest</RootNamespace>
     <Description>A Simple HttpClient Wrapper to handle Http Requests.</Description>
     <Company>TheHaleyProject</Company>
-    <Authors>Lingam</Authors>
+    <Authors>TheHaleyProject</Authors>
     <Copyright>Haley 2020</Copyright>
     <PackageIcon>Haley.png</PackageIcon>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
@@ -16,7 +16,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Product>Haley Helpers</Product>
     <PackageId>Haley.Rest</PackageId>
-    <Version>2.0.9</Version>
+    <Version>2.0.10</Version>
     <PackageProjectUrl>https://github.com/TheHaleyProject/HaleyRest</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rmsmech/HaleyRest</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

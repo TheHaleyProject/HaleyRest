@@ -206,6 +206,12 @@ namespace Haley.Models
                 case Method.PUT:
                     request_method = HttpMethod.Put;
                     break;
+                case Method.PATCH:
+                    request_method = new HttpMethod("PATCH");
+                break;
+                case Method.HEAD:
+                request_method = HttpMethod.Head;
+                break;
             }
             //At this point, do not parse the URL. It might already contain the URL params added to it. So just call the URL. // parseURI(url).resource_part
             var uri_components = ParseURI(url);
