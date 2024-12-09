@@ -464,7 +464,6 @@ namespace Haley.Models
         }
         HttpContent PrepareFormBody(MultiPartFormRequest formbody) {
             try {
-                HttpContent result = null;
                 //Form can be url encoded form and multi form.. //TODO : REFINE
                 //For more than one add as form data.
                 MultipartFormDataContent form_content = new MultipartFormDataContent();
@@ -482,7 +481,7 @@ namespace Haley.Models
                     }
                 }
 
-                return result;
+                return form_content;
             }
             catch (Exception ex) {
                 WriteLog(LogLevel.Trace, new EventId(1003), "Error while trying to prepare Form body", ex);
