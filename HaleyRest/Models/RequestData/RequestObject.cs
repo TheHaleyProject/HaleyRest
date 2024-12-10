@@ -19,7 +19,7 @@ namespace Haley.Models
     /// <description><see cref="RawBodyRequest"/> - For adding a body content to the request.</description>
     /// </item>
     ///  <item>
-    /// <description><see cref="MultiPartFormRequest"/> - For adding content as a Multi-part form content.</description>
+    /// <description><see cref="FormMultiPartRequest"/> - For adding content as a Multi-part form content.</description>
     /// </item>
     /// </list>
     /// </summary>

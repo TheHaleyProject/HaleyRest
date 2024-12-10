@@ -346,7 +346,7 @@ namespace Haley.Models
                     result = PrepareRawBody(rawReq);
 
                 }
-                else if (_requestBody is MultiPartFormRequest formreq) {
+                else if (_requestBody is FormMultiPartRequest formreq) {
                     //Decide if this is multipart form or urlencoded form data
                     result = PrepareFormBody(formreq);
                 }
@@ -462,7 +462,7 @@ namespace Haley.Models
                 return null;
             }
         }
-        HttpContent PrepareFormBody(MultiPartFormRequest formbody) {
+        HttpContent PrepareFormBody(FormMultiPartRequest formbody) {
             try {
                 //Form can be url encoded form and multi form.. //TODO : REFINE
                 //For more than one add as form data.
