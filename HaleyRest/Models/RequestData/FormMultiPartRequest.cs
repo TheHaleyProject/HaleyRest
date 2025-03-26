@@ -1,10 +1,5 @@
-﻿using System;
+﻿using Haley.Abstractions;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Haley.Enums;
-using Haley.Abstractions;
 
 namespace Haley.Models
 {
@@ -16,7 +11,25 @@ namespace Haley.Models
         //    }
         //}
 
+        public void Add(List<QueryParam> queryParamList) {
+            base.UpdateValue(GetDic(queryParamList));
+        }
+
+        static Dictionary<string,RawBodyRequest> GetDic(List<QueryParam> queryParamList) {
+            var result = new Dictionary<string, RawBodyRequest>();
+            foreach (var item in queryParamList) {
+                if (!result.ContainsKey(item.Key)) {
+                    result.Add(item.Key, new RawBodyRequest(item.Value));
+                } else {
+                    result[item.Key] = new RawBodyRequest(item.Value);
+                }
+            }
+            return result;
+        }
+
         public new Dictionary<string, RawBodyRequest> Value => base.Value as Dictionary<string, RawBodyRequest>;
+
+        public FormMultiPartRequest(List<QueryParam> queryParamList): this(GetDic(queryParamList)){}
 
         /// <summary>
         /// Rest Param Object

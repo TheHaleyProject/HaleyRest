@@ -278,6 +278,7 @@ namespace Haley.Models
                 if (_cancellation_token != null) {
                     message = await Client.BaseClient.SendAsync(_request, _cancellation_token.Value);
                 } else {
+                    
                     message = await Client.BaseClient.SendAsync(_request);
                 }
             } catch (Exception ex) {

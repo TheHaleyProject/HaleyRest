@@ -8,6 +8,7 @@ using System.Text;
 using System.Collections.Specialized;
 using System.Xml;
 using Haley.Utils;
+using Microsoft.Identity.Client;
 
 namespace Haley.Models {
     public class QueryParamList : List<QueryParam> {
@@ -61,6 +62,8 @@ namespace Haley.Models {
 
         #region Methods
 
+        public void Add(string key, string value) => Add(new QueryParam(key, value));
+   
         public void AddRange(IEnumerable<QueryParam> @params) {
             if (@params == null) return;
             base.AddRange(@params);
