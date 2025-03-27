@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Haley.Abstractions {
     public interface IEncodedFormRequestContent : IFormRequestContent {
-        new IList<QueryParam> Value { get; }
+        new IList<IQueryRequestContent> Value { get; }
         string GetEncodedBodyContent();
     }
 }

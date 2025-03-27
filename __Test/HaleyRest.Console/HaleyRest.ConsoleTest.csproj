@@ -2,13 +2,8 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Haley.Extensions" Version="2.1.16" />
-    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.1722.45" />
-  </ItemGroup>
 
 	<Import Project="$(SolutionDir)ProjectReferences_$(SolutionName).txt" Condition="Exists('$(SolutionDir)ProjectReferences_$(SolutionName).txt')" />
 	<Choose>

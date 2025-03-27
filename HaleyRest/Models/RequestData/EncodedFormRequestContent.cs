@@ -6,7 +6,7 @@ using System.Linq;
 namespace Haley.Models {
     public class EncodedFormRequestContent : HttpRequestContent, IEncodedFormRequestContent {
 
-        public new IList<QueryParam> Value => base.Value as IList<QueryParam>;
+        public new IList<IQueryRequestContent> Value => base.Value as IList<IQueryRequestContent>;
 
         public string GetEncodedBodyContent() {
 
@@ -18,9 +18,9 @@ namespace Haley.Models {
         /// Rest Param Object
         /// </summary>
         /// <param name="value"></param>
-        public EncodedFormRequestContent(IList<QueryParam> value) : base(value) {
+        public EncodedFormRequestContent(IList<IQueryRequestContent> value) : base(value) {
             if (value == null) {
-                base.UpdateValue(new List<QueryParam>());
+                base.UpdateValue(new List<IQueryRequestContent>());
             }
         }
     }

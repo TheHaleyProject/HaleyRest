@@ -382,9 +382,7 @@ namespace Haley.Models {
         }
         HttpContent PrepareRawBody(IRawBodyRequestContent rawbody) {
             try {
-
                 //Dont use the Decription of the rawbody request anywhere. It will be used only for internal purpose
-
                 HttpContent result = null;
                 if (rawbody.Value == null) return result;
                 string mediatype = string.IsNullOrWhiteSpace(rawbody.MIMEType) ? "application/octet-stream" : rawbody.MIMEType;
@@ -392,21 +390,12 @@ namespace Haley.Models {
                 switch (rawbody.BodyType) {
                     case BodyContentType.StringContent:
                     string _serialized_content = rawbody.Value.ToString(); //Assuming it is already serialized.
-                    if (!rawbody.IsSerialized && ) {
+                    //If the input is not serialize and also not in any of the default base formats, we try to serialize it.
+                    if (!(rawbody.Value.IsNumericType() || rawbody.Value is string || rawbody.Value is bool || rawbody.Value is Enum) && !rawbody.IsSerialized) {
                         _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
-                    }
-
-                    switch (rawbody.StringBodyFormat) {
-                        case StringContentFormat.Json:
-                       
                         mediatype = "application/json";
-                        break;
-                        case StringContentFormat.PlainText:
-                        if (!rawbody.IsSerialized) {
-                            _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
-                        }
-                        mediatype = "text/plain";
-                        break;
+                    } else {
+                        mediatype = "text/plain"; //Because it is a plain string.
                     }
 
                     if (_reporter != null) {
@@ -416,7 +405,7 @@ namespace Haley.Models {
                         result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.Title ?? "attachment" };
                     } else {
                         //string content.
-                        result = new StringContent(_serialized_content, Encoding.UTF8);
+                        result = new StringContent(_serialized_content);
                     }
                     break;
 
@@ -456,32 +445,20 @@ namespace Haley.Models {
 
                 foreach (var item in formbody.Value) {
                     if (item.Value == null || item.Value.Value == null) continue;
-
-
-                    var content = new StringContent(item.Value.Value.ToString()) {
-                        Headers = {
-                            ContentDisposition = new ContentDispositionHeaderValue("form-data") {
-                                Name = item.Key
-                            }
-                        }
-                    };
-                    form_content.Add(content);
                     var rawContent = PrepareRawBody(item.Value);
-
+                    if (rawContent == null) continue;
                     if (string.IsNullOrWhiteSpace(item.Value.Title)) {
                         rawContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") {
                             Name = item.Key
                         };
-                        form_content.Add(rawContent); //Also add the key.
                     } else {
                         rawContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") {
                             Name = item.Key,
                             FileName = item.Value.Title
                         };
-                        form_content.Add(rawContent); //File name cannot be empty. Sending empty variable throws exception/
                     }
+                    form_content.Add(rawContent); //Also add the key.
                 }
-
                 return form_content;
             } catch (Exception ex) {
                 WriteLog(LogLevel.Trace, new EventId(1003), "Error while trying to prepare Form body", ex);

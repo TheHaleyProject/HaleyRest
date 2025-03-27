@@ -8,10 +8,12 @@ namespace Haley.Models {
             if (!IsSerialized) IsSerialized = true;
         }
         public BodyContentType BodyType { get; set; }
+        /// <summary>
+        /// This will be shared with the HTTP Request. Can be used for sending the request with file name.
+        /// </summary>
+        public string Title { get; set; }
 
         public string MIMEType { get; set; }
-        public StringContentFormat StringBodyFormat { get; set; }
-
         /// <summary>
         /// Rest Param Object
         /// </summary>
@@ -23,7 +25,7 @@ namespace Haley.Models {
         public RawBodyRequestContent(object value, bool is_serialized = false, BodyContentType body_type = BodyContentType.StringContent) : base(value) {
             BodyType = body_type;
             IsSerialized = is_serialized;
-            StringBodyFormat = StringContentFormat.PlainText;
+            MIMEType = "application/json";
         }
     }
 }

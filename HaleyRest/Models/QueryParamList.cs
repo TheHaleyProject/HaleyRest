@@ -1,14 +1,15 @@
-﻿using Haley.Utils;
+﻿using Haley.Abstractions;
+using Haley.Utils;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 
 namespace Haley.Models {
-    public class QueryParamList : List<QueryParam> {
+    public class QueryParamList : List<IQueryRequestContent> {
 
         #region Getters
-        public QueryParam this[string key] {
+        public IQueryRequestContent this[string key] {
             get {
                 var allparams = this.Where(p => p.Key.Equals(key));
                 if (allparams.Count() == 0) {
@@ -42,7 +43,7 @@ namespace Haley.Models {
         #region Constructors
         public QueryParamList() { }
 
-        public QueryParamList(IEnumerable<QueryParam> @params) {
+        public QueryParamList(IEnumerable<IQueryRequestContent> @params) {
             AddRange(@params);
         }
         public QueryParamList(NameValueCollection @params) {
@@ -58,7 +59,7 @@ namespace Haley.Models {
 
         public void Add(string key, string value) => Add(new QueryParam(key, value));
 
-        public void AddRange(IEnumerable<QueryParam> @params) {
+        public void AddRange(IEnumerable<IQueryRequestContent> @params) {
             if (@params == null) return;
             base.AddRange(@params);
         }
