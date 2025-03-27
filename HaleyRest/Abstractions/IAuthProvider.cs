@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Haley.Utils;
+using System;
 using System.Net.Http;
-using Haley.Models;
-using Haley.Utils;
 
-namespace Haley.Abstractions
-{
+namespace Haley.Abstractions {
     /// <summary>
     /// To prepare authentication token and attach as a header for Rest Request
     /// <list type="table">
@@ -18,7 +14,7 @@ namespace Haley.Abstractions
     /// </item>
     /// </list>
     /// </summary>
-    public interface IAuthProvider{
-        string GenerateToken(Uri baseuri, HttpRequestMessage request,IAuthParam auth_param);
+    public interface IAuthProvider {
+        string GenerateToken(Uri baseuri, HttpRequestMessage request, IAuthParam auth_param);
     }
 }

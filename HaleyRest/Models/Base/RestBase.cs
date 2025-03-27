@@ -1,41 +1,28 @@
-﻿using Haley.Enums;
+﻿using Haley.Abstractions;
+using Haley.Enums;
 using Haley.Utils;
+using Microsoft.Extensions.Logging;
 using System;
-using Haley.Abstractions;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Runtime;
-using System.Runtime.CompilerServices;
+using System.Net.Http;
 using System.Text.Json;
-using System.Diagnostics;
-using System.Collections.Concurrent;
-using Haley.Models;
-using Trs =System.Timers;
-using System.Web;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
-using System.Data.Common;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace Haley.Models
-{
+namespace Haley.Models {
     //Error IDs begin with 1000's
     /// <summary>
     /// Rest Base for both FluentClient and also RestRequest
     /// </summary>
-    public abstract class RestBase : IRestBase
-    {
+    public abstract class RestBase : IRestBase {
         public string Id { get; }
         public string URL { get; protected set; }
-        
+
         protected ConcurrentDictionary<Type, JsonConverter> _jsonConverters = new ConcurrentDictionary<Type, JsonConverter>();
-        
+
         #region Attributes
         ILogger _logger;
         ConcurrentDictionary<string, IEnumerable<string>> _headers = new ConcurrentDictionary<string, IEnumerable<string>>();
@@ -44,15 +31,14 @@ namespace Haley.Models
         #endregion
 
         #region Constructors
-        protected RestBase(string url)
-        {
+        protected RestBase(string url) {
             Id = Guid.NewGuid().ToString();
             URL = url;
             //On creation add default request headers.
             ResetHeaders();
             AddDefaultHeaders();
         }
-        protected RestBase():this(string.Empty) { }
+        protected RestBase() : this(string.Empty) { }
         #endregion
 
         #region Protected Methods
@@ -113,7 +99,7 @@ namespace Haley.Models
             return this;
         }
         protected IRestBase AddHeader(string name, string value) {
-            AddHeaderValues(name, new List<string>() { value});
+            AddHeaderValues(name, new List<string>() { value });
             return this;
         }
 
@@ -142,7 +128,7 @@ namespace Haley.Models
             }
             return this;
         }
-       
+
         protected IRestBase ClearAuthentication() {
             //todo: This should not remove the authenticator but should temporarily disable authentication for this call alone. 
             _authenticator = null;
@@ -156,7 +142,7 @@ namespace Haley.Models
             _authenticator = authenticator;
             return this;
         }
-       
+
 
         protected IRestBase SetAuthParam(IAuthParam auth_param) {
             _authParam = auth_param;
@@ -179,8 +165,7 @@ namespace Haley.Models
 
         #region Helpers
         protected JsonSerializerOptions GetSerializerOptions() {
-            var options =  new JsonSerializerOptions()
-            {
+            var options = new JsonSerializerOptions() {
                 WriteIndented = true,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
                 UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement,
@@ -188,8 +173,7 @@ namespace Haley.Models
             try {
                 _jsonConverters.Values.ToList().ForEach(p => options.Converters.Add(p));
                 return options;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 WriteLog(LogLevel.Debug, $@"Error while trying to generate json serializer options.{ex.ToString()}");
                 return options;
             }
@@ -215,8 +199,7 @@ namespace Haley.Models
                     }
                 }
                 return (string.Empty, input_url);
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 WriteLog(LogLevel.Trace, new EventId(1004), "Error while trying to parse URI", ex);
                 return (string.Empty, input_url);
             }
@@ -237,12 +220,14 @@ namespace Haley.Models
         public abstract IRequest WithProgressReporter(IProgressReporter reporter);
         public abstract IRequest WithEndPoint(string resource_url_endpoint);
         public abstract IRequest AddCancellationToken(CancellationToken cancellation_token);
-        public abstract IRequest WithParameter(RequestObject param);
+        public abstract IRequest WithParameter(IRequestContent param);
         public abstract IRequest WithBody(object content, bool is_serialized, BodyContentType content_type);
-        public abstract IRequest WithParameters(IEnumerable<RequestObject> parameters);
+        public abstract IRequest WithBody(IRawBodyRequestContent rawBodyRequest);
+        public abstract IRequest WithParameters(IEnumerable<IRequestContent> parameters);
+        public abstract IRequest WithForm(IFormRequestContent form);
         public abstract IRequest WithContent(HttpContent content);
-        public abstract IRequest WithQuery(QueryParam param);
-        public abstract IRequest WithQueries(IEnumerable<QueryParam> parameters);
+        public abstract IRequest WithQuery(IQueryRequestContent param);
+        public abstract IRequest WithQueries(IEnumerable<IQueryRequestContent> parameters);
         public abstract Task<RestResponse<T>> GetAsync<T>() where T : class;
         public abstract Task<IResponse> GetAsync();
         public abstract Task<IResponse> PostAsync();

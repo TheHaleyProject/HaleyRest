@@ -1,13 +1,9 @@
 ﻿using Haley.Abstractions;
-using System;
-using System.Net;
 using System.Net.Http;
 
 
-namespace Haley.Models
-{
-    public class BaseResponse : IResponse
-    {
+namespace Haley.Models {
+    public class BaseResponse : IResponse {
         public HttpResponseMessage OriginalResponse { get; set; }
         public HttpContent OriginalContent => OriginalResponse == null ? null : OriginalResponse.Content;
 
@@ -25,8 +21,7 @@ namespace Haley.Models
             this.OriginalResponse = response;
             return this;
         }
-        public IResponse UpdateResponse(IResponse source_response)
-        {
+        public IResponse UpdateResponse(IResponse source_response) {
             this.OriginalResponse = source_response.OriginalResponse;
             return this;
         }

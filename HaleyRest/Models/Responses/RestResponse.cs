@@ -1,17 +1,13 @@
-﻿using Haley.Abstractions;
-using System;
-using System.Net;
-using System.Net.Http;
+﻿using System;
 using System.IO;
-using System.Threading.Tasks;
-using System.Linq;
 using System.IO.Compression;
+using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
-namespace Haley.Models
-{
-    public class RestResponse<T> : BaseResponse  where T : class
-    { 
+namespace Haley.Models {
+    public class RestResponse<T> : BaseResponse where T : class {
         public T Content { get; private set; }
         string _stringcontent;
         Func<string, T> _converter;
@@ -81,7 +77,7 @@ namespace Haley.Models
             }
         }
 
-        public RestResponse<T> SetConveter(Func<string,T> converter) {
+        public RestResponse<T> SetConveter(Func<string, T> converter) {
             _converter = converter;
             return this;
         }

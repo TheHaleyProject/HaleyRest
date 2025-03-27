@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Haley.Utils
-{
-    public class RestConstants
-    {
-        public class OAuth
-        {
+﻿namespace Haley.Utils {
+    public class RestConstants {
+        public class OAuth {
             public const string ConsumerKey = "oauth_consumer_key";
             public const string Nonce = "oauth_nonce";
             public const string SignatureMethod = "oauth_signature_method";

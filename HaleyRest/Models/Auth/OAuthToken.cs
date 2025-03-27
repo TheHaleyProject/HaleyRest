@@ -1,11 +1,4 @@
-﻿using Haley.Enums;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-
-namespace Haley.Models
-{
+﻿namespace Haley.Models {
     //FOLLOWS : https://www.rfc-editor.org/rfc/rfc5849
     public class OAuthToken {
         public string Key;

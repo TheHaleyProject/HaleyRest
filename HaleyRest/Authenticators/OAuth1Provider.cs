@@ -1,28 +1,15 @@
-﻿using System;
+﻿using Haley.Abstractions;
+using Haley.Enums;
+using Haley.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using System.Net;
-using System.IO;
-using System.Net.Http;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using Haley.Models;
-using Haley.Enums;
-using System.Text.Json;
-using System.Xml.Schema;
-using System.Security.Principal;
-using System.Security.Cryptography;
-using System.Data.Common;
-using Haley.Abstractions;
-using static System.Collections.Specialized.BitVector32;
-using System.Collections;
-using static Haley.Utils.RestConstants;
-using System.Xml.Linq;
 
-namespace Haley.Utils
-{
+namespace Haley.Utils {
     //FOLLOWS : https://www.rfc-editor.org/rfc/rfc5849
 
     //REFERENCES:
@@ -31,7 +18,7 @@ namespace Haley.Utils
     //https://developer.twitter.com/en/docs/authentication/oauth-1-0a
 
     //Follow: RFC-5849
-    public class OAuth1Provider : IAuthProvider{
+    public class OAuth1Provider : IAuthProvider {
 
         //Authenticator should only hold the consumer key and secret. Each request should carry their own OAuth1RequestInfo(with callback URL, request type and access_token, temporary token etc)
         //reason is when multiple users are trying to use the app (which might be hosted in the server), only the consumer key/secret will be common but for each user the access_token will be different. So it is logical to split it accordingly
@@ -53,8 +40,8 @@ namespace Haley.Utils
         }
         #region Public Methods
 
-        public string GenerateToken (Uri baseuri, HttpRequestMessage request, IAuthParam auth_param) {
-            return GenerateTokenAsync(baseuri,request, auth_param).Result;
+        public string GenerateToken(Uri baseuri, HttpRequestMessage request, IAuthParam auth_param) {
+            return GenerateTokenAsync(baseuri, request, auth_param).Result;
         }
 
         public async Task<string> GenerateTokenAsync(Uri baseuri, HttpRequestMessage request, IAuthParam auth_param) {
@@ -142,7 +129,7 @@ namespace Haley.Utils
             var result = new List<QueryParam>();
             //SECTION 1: QUERY
             //The query component of the HTTP request URI as defined by [RFC3986], Section 3.4.The query component is parsed into a list of name/ value pairs by treating it as an "application/x-www-form-urlencoded" string, separating the names and values and decoding them as defined by [W3C.REC - html40 - 19980424], Section 17.13.4.
-            var urlParams = NetUtils.ParseQueryParameters(request: request,ignore_prefix: "oauth_");
+            var urlParams = NetUtils.ParseQueryParameters(request: request, ignore_prefix: "oauth_");
 
             if (urlParams != null) {
                 //It is to be noted that whatever we receive from header is considered as encoded.
@@ -238,10 +225,10 @@ namespace Haley.Utils
             switch (requestInfo.RequestType) {
                 case OAuthRequestType.AccessToken:
                 case OAuthRequestType.ForProtectedResource:
-                    result.Add(RestConstants.OAuth.Token, requestInfo.Token.Key);
-                    break;
+                result.Add(RestConstants.OAuth.Token, requestInfo.Token.Key);
+                break;
                 default:
-                    break;
+                break;
             }
             return result.ToDictionary(p => p.Key, p => p.Value);
         }
@@ -266,32 +253,33 @@ namespace Haley.Utils
                 case SignatureType.HMACSHA1:
                 case SignatureType.HMACSHA256:
                 case SignatureType.HMACSHA512:
-                    HMAC hmac = new HMACSHA1();
-                    switch (consumerInfo.SignatureType) {
-                        case SignatureType.HMACSHA256:
-                            hmac = new HMACSHA256();
-                            break;
-                        case SignatureType.HMACSHA512:
-                            hmac = new HMACSHA512();
-                            break;
-                    }
-                    hmac.Key = Encoding.GetBytes(_key); //Key as a byte array
-                    //hmac.Key = Encoding.ASCII.GetBytes(_key); //Key as a byte array
-                    result = GenerateHash(base_string, hmac);
+                HMAC hmac = new HMACSHA1();
+                switch (consumerInfo.SignatureType) {
+                    case SignatureType.HMACSHA256:
+                    hmac = new HMACSHA256();
                     break;
+                    case SignatureType.HMACSHA512:
+                    hmac = new HMACSHA512();
+                    break;
+                }
+                hmac.Key = Encoding.GetBytes(_key); //Key as a byte array
+                                                    //hmac.Key = Encoding.ASCII.GetBytes(_key); //Key as a byte array
+                result = GenerateHash(base_string, hmac);
+                break;
                 case SignatureType.RSASHA1:
-                    using (var provider = new RSACryptoServiceProvider { PersistKeyInCsp = false }) {
-                        provider.FromXmlString(consumerInfo.Token.Secret); //UnEcoded consumer secret (no token secret)
-                        var hasher = SHA1.Create();
-                        var hash = hasher.ComputeHash(Encoding.GetBytes(base_string));
-                        result = Convert.ToBase64String(provider.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
-                    };
-                    break;
+                using (var provider = new RSACryptoServiceProvider { PersistKeyInCsp = false }) {
+                    provider.FromXmlString(consumerInfo.Token.Secret); //UnEcoded consumer secret (no token secret)
+                    var hasher = SHA1.Create();
+                    var hash = hasher.ComputeHash(Encoding.GetBytes(base_string));
+                    result = Convert.ToBase64String(provider.SignHash(hash, CryptoConfig.MapNameToOID("SHA1")));
+                }
+                ;
+                break;
                 case SignatureType.PLAINTEXT:
-                    result = _key; //Direclty send the key back.
-                    break;
+                result = _key; //Direclty send the key back.
+                break;
                 default:
-                    throw new NotImplementedException("This signature signing is not implemented yet. Please try with HMAC-SHA1, HMAC-SHA256, RSA-SHA1 or PlainText.");
+                throw new NotImplementedException("This signature signing is not implemented yet. Please try with HMAC-SHA1, HMAC-SHA256, RSA-SHA1 or PlainText.");
             }
             return result;
         }
@@ -307,12 +295,12 @@ namespace Haley.Utils
             switch (requestInfo.RequestType) {
                 case OAuthRequestType.AccessToken:
                 case OAuthRequestType.ForProtectedResource:
-                    //If the request is for access token, then we need both the key and secret for the access token
-                    if (string.IsNullOrWhiteSpace(requestInfo.Token.Key)) throw new ArgumentNullException(nameof(OAuth1RequestInfo.Token.Key));
-                    if (string.IsNullOrWhiteSpace(requestInfo.Token.Secret)) throw new ArgumentNullException(nameof(OAuth1RequestInfo.Token.Secret));
-                    break;
+                //If the request is for access token, then we need both the key and secret for the access token
+                if (string.IsNullOrWhiteSpace(requestInfo.Token.Key)) throw new ArgumentNullException(nameof(OAuth1RequestInfo.Token.Key));
+                if (string.IsNullOrWhiteSpace(requestInfo.Token.Secret)) throw new ArgumentNullException(nameof(OAuth1RequestInfo.Token.Secret));
+                break;
                 default:
-                    break;
+                break;
             }
         }
         //private string WriteAuthHeader(Dictionary<string,string> param_list,string prefix) {

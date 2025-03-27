@@ -1,14 +1,10 @@
 ﻿using Haley.Models;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 
 namespace Haley.Utils {
     public static class RequestParamExtensions {
-        public static  IEnumerable<QueryParam> ToRequestParams(this Dictionary<string,string> parameters) {
+        public static IEnumerable<QueryParam> ToRequestParams(this Dictionary<string, string> parameters) {
             List<QueryParam> result = new List<QueryParam>();
             if (parameters == null) return result;
             foreach (var kvp in parameters) {
@@ -17,7 +13,7 @@ namespace Haley.Utils {
             return result;
         }
 
-        public static QueryParam ToRequestParam(this KeyValuePair<string,string> kvp) {
+        public static QueryParam ToRequestParam(this KeyValuePair<string, string> kvp) {
             if (string.IsNullOrWhiteSpace(kvp.Key)) return null;
             var data = kvp.Value;
             return new QueryParam(kvp.Key, kvp.Value);

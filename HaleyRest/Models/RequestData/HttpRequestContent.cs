@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
-using System.Threading.Tasks;
-using Haley.Enums;
+﻿using Haley.Abstractions;
+using System;
 
-namespace Haley.Models
-{
+namespace Haley.Models {
     /// <summary>
     /// Arguments that will be used with a Rest Request. 
     /// Arguments can be added to a query or to the body based on the type of object used.
@@ -16,16 +10,15 @@ namespace Haley.Models
     /// <description><see cref="QueryParam"/> - For adding parameters to URL Query.</description>
     /// </item>
     /// <item>
-    /// <description><see cref="RawBodyRequest"/> - For adding a body content to the request.</description>
+    /// <description><see cref="RawBodyRequestContent"/> - For adding a body content to the request.</description>
     /// </item>
     ///  <item>
-    /// <description><see cref="FormMultiPartRequest"/> - For adding content as a Multi-part form content.</description>
+    /// <description><see cref="FormDataRequestContent"/> - For adding content as a Multi-part form content.</description>
     /// </item>
     /// </list>
     /// </summary>
-    public abstract class RequestObject
-    {
-        public string Id { get;}
+    public abstract class HttpRequestContent : IRequestContent {
+        public string Id { get; }
         public object Value { get; private set; }
         /// <summary>
         /// This will be shared with the HTTP Request. Can be used for sending the request with file name.
@@ -42,8 +35,7 @@ namespace Haley.Models
         /// Rest Param Object
         /// </summary>
         /// <param name="value"></param>
-        protected RequestObject(object value)
-        {
+        protected HttpRequestContent(object value) {
             Id = Guid.NewGuid().ToString();
             Value = value;
         }

@@ -1,37 +1,21 @@
-﻿using Haley.Enums;
-using Haley.Utils;
-using System;
-using Haley.Abstractions;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Diagnostics;
-using System.Collections.Concurrent;
-using Haley.Models;
-using Trs =System.Timers;
-using System.Web;
-using System.Text.Json.Serialization;
+﻿using Haley.Abstractions;
+using Haley.Enums;
 using Microsoft.Extensions.Logging;
-using System.Data.Common;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Mime;
+using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace Haley.Models
-{
+namespace Haley.Models {
     //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
 
     /// <summary>
     /// A simple straightforward HTTPClient Wrapper.
     /// </summary>
-    public sealed class FluentClient :RestBase, IClient
-    {
+    public sealed class FluentClient : RestBase, IClient {
         public HttpClient BaseClient { get; private set; }
         public string FriendlyName { get; set; }
 
@@ -43,8 +27,7 @@ namespace Haley.Models
         #endregion
 
         #region Constructors
-        public FluentClient(string base_address,string friendly_name ,Func<HttpRequestMessage, Task<bool>> request_validationcallback,ILogger logger):base(base_address)
-        {
+        public FluentClient(string base_address, string friendly_name, Func<HttpRequestMessage, Task<bool>> request_validationcallback, ILogger logger) : base(base_address) {
             _base_uri = CreateURI(base_address);
             _request_validation_cb = request_validationcallback;
             if (string.IsNullOrWhiteSpace(friendly_name)) friendly_name = base_address;
@@ -53,14 +36,13 @@ namespace Haley.Models
             BaseClient = new HttpClient(_handler, false); //Base client is read only. So initiate only once.
             if (_base_uri == null || string.IsNullOrWhiteSpace(base_address)) {
                 WriteLog(LogLevel.Debug, $@"Warning: Base URI for the Client is null. Please add base uri to client or the rest request endpoints needs to be provided with full URL for proper execution");
-            }
-            else {
+            } else {
                 BaseClient.BaseAddress = _base_uri; //Address can be set only once. Calling multiple times will throw exception.
             }
             ResetHeaders();
         }
-        public FluentClient(string base_address, string friendly_name,ILogger logger) : this(base_address, friendly_name,null,logger) { }
-        public FluentClient(string base_address, ILogger logger) : this(base_address, base_address, null,logger) { }
+        public FluentClient(string base_address, string friendly_name, ILogger logger) : this(base_address, friendly_name, null, logger) { }
+        public FluentClient(string base_address, ILogger logger) : this(base_address, base_address, null, logger) { }
         public FluentClient(string base_address) : this(base_address, "Fluent Client", null) { }
         public FluentClient() : this(string.Empty, "Fluent Client", null) { }
 
@@ -71,19 +53,18 @@ namespace Haley.Models
                 var targetBaseAddress = BaseClient.BaseAddress;
                 var newclient = new HttpClient(handler, disposehandler);
                 newclient.BaseAddress = targetBaseAddress;
-                BaseClient = newclient; 
+                BaseClient = newclient;
             }
             return this;
         }
         #endregion
 
-        public override string ToString()
-        {
+        public override string ToString() {
             return this.FriendlyName;
         }
 
         public IClient UpdateFriendlyName(string friendlyName) {
-            FriendlyName = string.IsNullOrWhiteSpace(friendlyName)? "Fluent Client":friendlyName;
+            FriendlyName = string.IsNullOrWhiteSpace(friendlyName) ? "Fluent Client" : friendlyName;
             return this;
         }
 
@@ -100,7 +81,7 @@ namespace Haley.Models
             return this;
         }
         public IRequest CreateRequest() {
-            return GetNewRequest();   
+            return GetNewRequest();
         }
         public override IRequest WithEndPoint(string resource_url_endpoint) {
             return GetNewRequest().WithEndPoint(resource_url_endpoint);
@@ -109,27 +90,33 @@ namespace Haley.Models
         public override IRequest AddCancellationToken(CancellationToken cancellation_token) {
             return GetNewRequest().AddCancellationToken(cancellation_token);
         }
-       
-        public override IRequest WithParameter(RequestObject param) {
+
+        public override IRequest WithParameter(IRequestContent param) {
             return GetNewRequest().WithParameter(param);
         }
 
         public override IRequest WithBody(object content, bool is_serialized, BodyContentType content_type) {
             return GetNewRequest().WithBody(content, is_serialized, content_type);
         }
-
-        public override IRequest WithParameters(IEnumerable<RequestObject> parameters) {
+        public override IRequest WithBody(IRawBodyRequestContent rawBodyRequest) {
+            return GetNewRequest().WithBody(rawBodyRequest);
+        }
+        public override IRequest WithParameters(IEnumerable<IRequestContent> parameters) {
             return GetNewRequest().WithParameters(parameters);
         }
 
         public override IRequest WithContent(HttpContent content) {
             return GetNewRequest().WithContent(content);
         }
-        public override IRequest WithQuery(QueryParam param) {
+        public override IRequest WithQuery(IQueryRequestContent param) {
             return GetNewRequest().WithQuery(param);
         }
 
-        public override IRequest WithQueries(IEnumerable<QueryParam> parameters) {
+        public override IRequest WithForm(IFormRequestContent param) {
+            return GetNewRequest().WithForm(param);
+        }
+
+        public override IRequest WithQueries(IEnumerable<IQueryRequestContent> parameters) {
             return GetNewRequest().WithQueries(parameters);
         }
 

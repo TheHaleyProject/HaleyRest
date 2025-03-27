@@ -1,16 +1,9 @@
-﻿using Haley.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
-using Haley.Abstractions;
+﻿using Haley.Abstractions;
+using Haley.Models;
 using System.Threading.Tasks;
 
 namespace Haley.Utils {
-    public static class ResponseExtensions
-    {
+    public static class ResponseExtensions {
         public static async Task<StringResponse> AsStringResponseAsync(this IResponse response) {
             if (response is StringResponse) return response as StringResponse;
             return new StringResponse(response.OriginalResponse);

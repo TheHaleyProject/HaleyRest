@@ -1,45 +1,31 @@
 ﻿using Haley.Enums;
-using Haley.Utils;
-using System;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Diagnostics;
-using System.Text.Json.Serialization;
 using Haley.Models;
-using Microsoft.Extensions.Logging;
-using System.Net.Mime;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace Haley.Abstractions
-{
+namespace Haley.Abstractions {
     /// <summary>
     /// A simple straightforward HTTPclient Wrapper.
     /// </summary>
-    public interface IRestBase
-    {
+    public interface IRestBase {
         string Id { get; }
         string URL { get; }
 
         #region Return Requests
-        
+
         IRequest AddCancellationToken(CancellationToken cancellation_token); //Cancellation token is only for the requests.
         IRequest WithEndPoint(string resource_url_endpoint);
         //Prepare Request
-        IRequest WithParameter(RequestObject param);
-        IRequest WithParameters(IEnumerable<RequestObject> parameters);
-        IRequest WithQuery(QueryParam param);
-        IRequest WithQueries(IEnumerable<QueryParam> parameters);
+        IRequest WithParameter(IRequestContent param);
+        IRequest WithParameters(IEnumerable<IRequestContent> parameters);
+        IRequest WithForm(IFormRequestContent form);
+        IRequest WithQuery(IQueryRequestContent param);
+        IRequest WithQueries(IEnumerable<IQueryRequestContent> parameters);
         IRequest WithContent(HttpContent content);
         IRequest WithBody(object content, bool is_serialized, BodyContentType content_type);
+        IRequest WithBody(IRawBodyRequestContent rawBodyRequest);
         /// <summary>
         /// This will upload / download files in chunk of 4096 (4 kb)
         /// </summary>

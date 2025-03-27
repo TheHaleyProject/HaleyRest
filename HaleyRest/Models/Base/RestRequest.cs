@@ -1,41 +1,29 @@
-﻿using Haley.Enums;
+﻿using Haley.Abstractions;
+using Haley.Enums;
 using Haley.Utils;
+using Microsoft.Extensions.Logging;
 using System;
-using Haley.Abstractions;
-using System.Net;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-using System.Runtime;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
-using System.Diagnostics;
-using System.Collections.Concurrent;
-using Haley.Models;
-using Trs =System.Timers;
-using System.Web;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
-using System.Data.Common;
-using static System.Net.Mime.MediaTypeNames;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace Haley.Models
-{
+namespace Haley.Models {
     //GET METHODS WITH A BODY: https://stackoverflow.com/questions/978061/http-get-with-request-body
 
     /// <summary>
     /// A simple straightforward HTTPClient Wrapper.
     /// </summary>
-    public sealed class RestRequest : RestBase, IRequest
-    {
+    public sealed class RestRequest : RestBase, IRequest {
         HttpRequestMessage _request = null;  //Prio-1
         HttpContent _content = null; //Prio-2
-        IEnumerable<RequestObject> _requestObjects = new List<RequestObject>();//Prio-3
+        IEnumerable<IRequestContent> _requestObjects = new List<IRequestContent>();//Prio-3
         bool _inherit_headers = false;
         bool _inherit_authentication = false;
         bool _inherit_auth_param = false;
@@ -51,24 +39,32 @@ namespace Haley.Models
         public RestRequest(string end_point_url, IClient client) : base(end_point_url) {
             Client = client;
         }
-        public RestRequest(string end_point_url) : this(end_point_url,null) { }
+        public RestRequest(string end_point_url) : this(end_point_url, null) { }
         public RestRequest() : this(string.Empty, null) { }
         #endregion
 
         #region Request Creation
-        public override IRequest WithQuery(QueryParam param) {
+        public override IRequest WithQuery(IQueryRequestContent param) {
             return WithParameter(param);
         }
-        public override IRequest WithQueries(IEnumerable<QueryParam> parameters) {
+        public override IRequest WithQueries(IEnumerable<IQueryRequestContent> parameters) {
             return WithParameters(parameters);
         }
         public override IRequest WithBody(object content, bool is_serialized, BodyContentType content_type) {
-            return WithParameter(new RawBodyRequest(content, is_serialized, content_type));
+            return WithParameter(new RawBodyRequestContent(content, is_serialized, content_type));
         }
-        public override IRequest WithParameter(RequestObject param) {
-            return WithParameters(new List<RequestObject>() { param });
+        public override IRequest WithBody(IRawBodyRequestContent rawBodyRequest) {
+            return WithParameter(rawBodyRequest);
         }
-        public override IRequest WithParameters(IEnumerable<RequestObject> parameters) {
+
+        public override IRequest WithParameter(IRequestContent param) {
+            return WithParameters(new List<IRequestContent>() { param });
+        }
+
+        public override IRequest WithForm(IFormRequestContent param) {
+            return WithParameter(param);
+        }
+        public override IRequest WithParameters(IEnumerable<IRequestContent> parameters) {
             _requestObjects = parameters;
             return this;
         }
@@ -96,7 +92,7 @@ namespace Haley.Models
                 return this;
             }
 
-            URL = ParseURI(resource_url_endpoint).pathQuery; 
+            URL = ParseURI(resource_url_endpoint).pathQuery;
             return this;
         }
 
@@ -117,7 +113,7 @@ namespace Haley.Models
             var _response = await GetAsync();
             var _options = GetSerializerOptions();
             var result = await new RestResponse<T>(_response.OriginalResponse)
-                               .SetConveter((str) => { return JsonSerializer.Deserialize<T>(str,_options); })
+                               .SetConveter((str) => { return JsonSerializer.Deserialize<T>(str, _options); })
                                .FetchContent();
             return result;
         }
@@ -139,17 +135,16 @@ namespace Haley.Models
             if (_request != null) {
                 //Prio 1 : If request is available.
                 return await SendAsync(_request);
-            } else if(_content != null) {
+            } else if (_content != null) {
                 //Prio 2 : If content is availble without request.
-                return await SendAsync(_content,URL, method); //Send associated URL without parsing
-            } else if(_requestObjects != null && _requestObjects.Count() > 0) {
+                return await SendAsync(_content, URL, method); //Send associated URL without parsing
+            } else if (_requestObjects != null && _requestObjects.Count() > 0) {
                 //Prio 3: Conver the request objects to httpcontent.
                 var processedInputs = ConverToHttpContent(URL, _requestObjects, method); //Here, URL is just the end point.
                 return await SendAsync(processedInputs.content, processedInputs.url, method);
-            }
-            else {
+            } else {
                 //No content, no queries. Just send the plain request with the given method.
-                return await SendAsync(null,URL, method);
+                return await SendAsync(null, URL, method);
             }
         }
 
@@ -157,7 +152,7 @@ namespace Haley.Models
 
         #region Send Methods
 
-        private string GetAuthValue(IRestBase source,HttpRequestMessage request) {
+        private string GetAuthValue(IRestBase source, HttpRequestMessage request) {
             var authenticator = FetchAuthenticator(this);
             if (authenticator == null) return null;
             var authparam = FetchAuthParam(this);
@@ -195,19 +190,19 @@ namespace Haley.Models
             HttpMethod request_method = HttpMethod.Get;
             switch (method) {
                 case Method.GET:
-                    request_method = HttpMethod.Get;
-                    break;
+                request_method = HttpMethod.Get;
+                break;
                 case Method.POST:
-                    request_method = HttpMethod.Post;
-                    break;
+                request_method = HttpMethod.Post;
+                break;
                 case Method.DELETE:
-                    request_method = HttpMethod.Delete;
-                    break;
+                request_method = HttpMethod.Delete;
+                break;
                 case Method.PUT:
-                    request_method = HttpMethod.Put;
-                    break;
+                request_method = HttpMethod.Put;
+                break;
                 case Method.PATCH:
-                    request_method = new HttpMethod("PATCH");
+                request_method = new HttpMethod("PATCH");
                 break;
                 case Method.HEAD:
                 request_method = HttpMethod.Head;
@@ -240,8 +235,7 @@ namespace Haley.Models
                 foreach (var kvp in _headers) {
                     try {
                         _request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value); //Do not validate.
-                    }
-                    catch (Exception ex) {
+                    } catch (Exception ex) {
                         WriteLog(LogLevel.Debug, new EventId(2001, "Header Error"), "Error while trying to add a header", ex);
                     }
                 }
@@ -278,7 +272,7 @@ namespace Haley.Models
                 if (_cancellation_token != null) {
                     message = await Client.BaseClient.SendAsync(_request, _cancellation_token.Value);
                 } else {
-                    
+
                     message = await Client.BaseClient.SendAsync(_request);
                 }
             } catch (Exception ex) {
@@ -287,7 +281,7 @@ namespace Haley.Models
             }
             return new BaseResponse(message);
         }
-        
+
         #endregion
 
         #region Helpers
@@ -319,7 +313,7 @@ namespace Haley.Models
         private void ValidateClient() {
             if (Client == null) throw new ArgumentNullException(nameof(Client));
         }
-        (HttpContent content, string url) ConverToHttpContent(string url, IEnumerable<RequestObject> paramList, Method method) {
+        (HttpContent content, string url) ConverToHttpContent(string url, IEnumerable<IRequestContent> paramList, Method method) {
             //HTTPCONENT itself is a abstract class. We can have StringContent, StreamContent,FormURLEncodedContent,MultiPartFormdataContent.
             //Based on the params, we might add the data to content or to the url (in case of get).
             if (paramList == null || paramList?.Count() == 0) return (null, url ?? string.Empty);
@@ -334,52 +328,48 @@ namespace Haley.Models
             processed_url = PrepareQuery(url, paramList);
             return (processed_content, processed_url);
         }
-        HttpContent PrepareBody(IEnumerable<RequestObject> paramList, Method method) {
+        HttpContent PrepareBody(IEnumerable<IRequestContent> paramList, Method method) {
             //We can add only one type of body to an object. If we have more than one type, we log the error and take only the first item.
             try {
                 HttpContent result = null;
                 //paramList.Where(p=> typeof(IRequestBody).IsAssignableFrom(p))?.f
-                var _requestBody = paramList.Where(p => p is IRequestBody)?.FirstOrDefault();
+                var _requestBody = paramList.Where(p => p is IRawBodyRequestContent || p is IFormRequestContent || p is IEncodedFormRequestContent)?.FirstOrDefault();
                 if (_requestBody == null || _requestBody.Value == null) return result; //Not need of further processing for null values.
                 WriteLog(LogLevel.Debug, $@"Request body of type {_requestBody?.GetType()} is getting added to request body.");
-                if (_requestBody is RawBodyRequest rawReq) {
+                if (_requestBody is IRawBodyRequestContent rawReq) {
                     //Just add a raw content and send.
                     result = PrepareRawBody(rawReq);
 
-                }
-                else if (_requestBody is FormMultiPartRequest formreq) {
-                    //Decide if this is multipart form or urlencoded form data
+                } else if (_requestBody is IFormDataRequestContent formreq) {
                     result = PrepareFormBody(formreq);
-                }
-                else if (_requestBody is FormEncodedRequest encodedReq) {
+                } else if (_requestBody is IEncodedFormRequestContent encodedReq) {
                     result = PrepareFormEncodedBody(encodedReq);
                 }
                 return result;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 WriteLog(LogLevel.Trace, new EventId(6000), "Error while trying to prepare body", ex);
                 return null;
             }
         }
-        string PrepareQuery(string url, IEnumerable<RequestObject> paramList) {
+        string PrepareQuery(string url, IEnumerable<IRequestContent> paramList) {
             string result = url;
             //HTTP Parse query automatically encodes/escapedatastring the values. So, if incoming value is already encoded, it is double encoded which results in inconsistencies.
             //var _query = HttpUtility.ParseQueryString(string.Empty);
-            StringBuilder query= new StringBuilder();
-            var paramQueries = paramList.Where(p => p is IRequestQuery)?.Cast<IRequestQuery>().ToList(); //Of all the request objects, get only the request queries.
+            StringBuilder query = new StringBuilder();
+            var paramQueries = paramList.Where(p => p is IQueryRequestContent)?.Cast<IQueryRequestContent>().ToList(); //Of all the request objects, get only the request queries.
             if (paramQueries == null || paramQueries.Count == 0) return result; //return the input url
 
             bool startFlag = true;
             foreach (var param in paramQueries) {
                 //if something is marked as the decodedoutput, then it should not be further decoded.(Like it should not be URL
-                var key = NetUtils.URLSingleEncode(param.Key, param.IsURLDecoded? param.Key : null); 
-                var value = NetUtils.URLSingleEncode(param.Value, param.IsURLDecoded ? param.Value : null); 
+                var key = NetUtils.URLSingleEncode(param.Key, param.IsURLDecoded ? param.Key : null);
+                var value = NetUtils.URLSingleEncode(param.Value, param.IsURLDecoded ? param.Value : null);
 
                 if (!startFlag) {
                     query.Append("&");
                 }
                 query.Append($@"{key}={value}");
-                if (startFlag) startFlag= false; //once started start flag is always false.
+                if (startFlag) startFlag = false; //once started start flag is always false.
             }
 
             var formed_query = query.ToString();
@@ -390,106 +380,115 @@ namespace Haley.Models
             //The final formed query will be properly URLSingleEncoded
             return result;
         }
-        HttpContent PrepareRawBody(RawBodyRequest rawbody) {
+        HttpContent PrepareRawBody(IRawBodyRequestContent rawbody) {
             try {
 
                 //Dont use the Decription of the rawbody request anywhere. It will be used only for internal purpose
 
                 HttpContent result = null;
-                string mediatype = string.IsNullOrWhiteSpace(rawbody.MIMEType)? "application/octet-stream" : rawbody.MIMEType;
+                if (rawbody.Value == null) return result;
+                string mediatype = string.IsNullOrWhiteSpace(rawbody.MIMEType) ? "application/octet-stream" : rawbody.MIMEType;
 
                 switch (rawbody.BodyType) {
                     case BodyContentType.StringContent:
-                        string _serialized_content = rawbody.Value as string; //Assuming it is already serialized.
+                    string _serialized_content = rawbody.Value.ToString(); //Assuming it is already serialized.
+                    if (!rawbody.IsSerialized && ) {
+                        _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
+                    }
 
-                        switch (rawbody.StringBodyFormat) {
-                            case StringContentFormat.Json:
-                                if (!rawbody.IsSerialized) {
-                                    _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
-                                }
-                                mediatype = "application/json";
-                                break;
-
-                            case StringContentFormat.XML:
-                                if (!rawbody.IsSerialized) {
-                                    _serialized_content = rawbody.Value.ToXml().ToString();
-                                }
-                                mediatype = "application/xml";
-                                break;
-                            case StringContentFormat.PlainText:
-                                if (!rawbody.IsSerialized) {
-                                    _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
-                                }
-                                mediatype = "text/plain";
-                                break;
-                        }
-
-                        if (_reporter != null) {
-                            byte[] byteArray = Encoding.UTF8.GetBytes(_serialized_content);
-                            MemoryStream stream = new MemoryStream(byteArray);
-                            result = new ProgressableStreamContent(stream, _reporter, rawbody.Id) { Title = rawbody.Title, Description = rawbody.Description};
-                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.Title ?? "attachment" };
-                        } else {
-                            //string content.
-                            result = new StringContent(_serialized_content, Encoding.UTF8);
-                        }
+                    switch (rawbody.StringBodyFormat) {
+                        case StringContentFormat.Json:
+                       
+                        mediatype = "application/json";
                         break;
+                        case StringContentFormat.PlainText:
+                        if (!rawbody.IsSerialized) {
+                            _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
+                        }
+                        mediatype = "text/plain";
+                        break;
+                    }
+
+                    if (_reporter != null) {
+                        byte[] byteArray = Encoding.UTF8.GetBytes(_serialized_content);
+                        MemoryStream stream = new MemoryStream(byteArray);
+                        result = new ProgressableStreamContent(stream, _reporter, rawbody.Id) { Title = rawbody.Title, Description = rawbody.Description };
+                        result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.Title ?? "attachment" };
+                    } else {
+                        //string content.
+                        result = new StringContent(_serialized_content, Encoding.UTF8);
+                    }
+                    break;
 
                     case BodyContentType.ByteArrayContent:
                     case BodyContentType.StreamContent:
-                        if (rawbody.Value is byte[] byteContent) {
-                            //If byte content.
-                            result = new ByteArrayContent(byteContent, 0, byteContent.Length);
+                    if (rawbody.Value is byte[] byteContent) {
+                        //If byte content.
+                        result = new ByteArrayContent(byteContent, 0, byteContent.Length);
+                    } else if (rawbody.Value is Stream streamContent) {
+                        if (_reporter != null) {
+                            result = new ProgressableStreamContent(streamContent, _reporter, rawbody.Id);
+                        } else {
+                            //If stream content.
+                            result = new StreamContent(streamContent);
                         }
-                        else if (rawbody.Value is Stream streamContent) {
-                            if (_reporter != null) {
-                                result = new ProgressableStreamContent(streamContent,_reporter,rawbody.Id);
-                            } else {
-                                //If stream content.
-                                result = new StreamContent(streamContent);
-                            }
-                            //Dont' remove all headers. Only the content type. Header might have authentications properly set.
-                            result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.Title ?? "attachment" };
-                        }
-                        break;
+                        //Dont' remove all headers. Only the content type. Header might have authentications properly set.
+                        result.Headers.ContentDisposition = new ContentDispositionHeaderValue("stream-data") { FileName = rawbody.Title ?? "attachment" };
+                    }
+                    break;
                 }
 
                 result.Headers.Remove("Content-Type");
                 result.Headers.ContentType = new MediaTypeHeaderValue(mediatype);
                 return result;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 WriteLog(LogLevel.Trace, new EventId(6001), "Error while trying to prepare Raw body", ex);
                 return null;
             }
         }
-        HttpContent PrepareFormBody(FormMultiPartRequest formbody) {
+        HttpContent PrepareFormBody(IFormDataRequestContent formbody) {
             try {
                 //Form can be url encoded form and multi form.. //TODO : REFINE
                 //For more than one add as form data.
                 MultipartFormDataContent form_content = new MultipartFormDataContent();
-                form_content.Headers.Remove("Content-Type");
-                form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + _boundary);
+                //form_content.Headers.Remove("Content-Type");
+                //form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + _boundary);
 
                 foreach (var item in formbody.Value) {
-                    if (item.Value == null) continue;
+                    if (item.Value == null || item.Value.Value == null) continue;
+
+
+                    var content = new StringContent(item.Value.Value.ToString()) {
+                        Headers = {
+                            ContentDisposition = new ContentDispositionHeaderValue("form-data") {
+                                Name = item.Key
+                            }
+                        }
+                    };
+                    form_content.Add(content);
                     var rawContent = PrepareRawBody(item.Value);
+
                     if (string.IsNullOrWhiteSpace(item.Value.Title)) {
-                        form_content.Add(rawContent, item.Key); //Also add the key.
-                    }
-                    else {
-                        form_content.Add(rawContent, item.Key, item.Value.Title); //File name cannot be empty. Sending empty variable throws exception/
+                        rawContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") {
+                            Name = item.Key
+                        };
+                        form_content.Add(rawContent); //Also add the key.
+                    } else {
+                        rawContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") {
+                            Name = item.Key,
+                            FileName = item.Value.Title
+                        };
+                        form_content.Add(rawContent); //File name cannot be empty. Sending empty variable throws exception/
                     }
                 }
 
                 return form_content;
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 WriteLog(LogLevel.Trace, new EventId(1003), "Error while trying to prepare Form body", ex);
                 return null;
             }
         }
-        HttpContent PrepareFormEncodedBody(FormEncodedRequest formbody) {
+        HttpContent PrepareFormEncodedBody(IEncodedFormRequestContent formbody) {
             try {
                 return new StringContent(formbody.GetEncodedBodyContent(), null, "application/x-www-form-urlencoded");
             } catch (Exception ex) {
@@ -581,8 +580,7 @@ namespace Haley.Models
         }
 
         #endregion
-        public override string ToString()
-        {
+        public override string ToString() {
             return this.URL;
         }
     }

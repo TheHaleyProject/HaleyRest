@@ -1,10 +1,5 @@
 ﻿using Haley.Enums;
-using Haley.Abstractions;
 using System;
-using System.Collections.Generic;
-using System.Security.Principal;
-using System.Text;
-using System.IO;
 
 namespace Haley.Models {
     public class ProgressTracker {
@@ -25,7 +20,7 @@ namespace Haley.Models {
         /// In bytes
         /// </summary>
         public long ConsumedSize { get; set; }
-        
+
         public ProgressTracker WithSize(long totalsize, long consumedsize) {
             TotalSize = totalsize;
             ConsumedSize = consumedsize;

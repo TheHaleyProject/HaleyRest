@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Haley.Abstractions;
+using Haley.Enums;
+using System;
 using System.Diagnostics.Contracts;
 using System.IO;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
-using Haley.Abstractions;
-using Haley.Enums;
 
 namespace Haley.Models {
 
@@ -30,7 +28,7 @@ namespace Haley.Models {
         public string Title { get; set; }
         public string Description { get; set; }
 
-        public ProgressableStreamContent(Stream content, IProgressReporter reporter,string requestObjectId) : this(content, defaultBufferSize, reporter,requestObjectId) { }
+        public ProgressableStreamContent(Stream content, IProgressReporter reporter, string requestObjectId) : this(content, defaultBufferSize, reporter, requestObjectId) { }
         public ProgressableStreamContent(Stream content, int bufferSize, IProgressReporter reporter, string requestObjectId) {
             if (content == null) {
                 throw new ArgumentNullException("content");
@@ -50,13 +48,12 @@ namespace Haley.Models {
 
             PrepareContent();
 
-            return Task.Run(() =>
-            {
+            return Task.Run(() => {
                 var buffer = new Byte[this._bufferSize];
                 var size = _content.Length;
                 var uploaded = 0;
 
-                _reporter.InitializeTracker(new ProgressTracker(_requestObjId) { Title = this.Title, Description = this.Description,TotalSize = size,ConsumedSize = 0 }); //Initialize this tracker first
+                _reporter.InitializeTracker(new ProgressTracker(_requestObjId) { Title = this.Title, Description = this.Description, TotalSize = size, ConsumedSize = 0 }); //Initialize this tracker first
                 _reporter.ChangeState(_requestObjId, ProgressState.InProgress);
 
                 using (_content) {
@@ -67,7 +64,7 @@ namespace Haley.Models {
                         if (length <= 0) break; //If we are no longer able to read the content or reached the end, break the loop.
                         uploaded += length;
                         stream.Write(buffer, 0, length);
-                        _reporter.ChangeProgress(_requestObjId,uploaded); //this will call the method in a different thread.
+                        _reporter.ChangeProgress(_requestObjId, uploaded); //this will call the method in a different thread.
                     }
                 }
                 _reporter.ChangeState(_requestObjId, ProgressState.TransferComplete);

@@ -1,16 +1,10 @@
-﻿using System;
+﻿using Haley.Abstractions;
+using Haley.Utils;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Haley.Enums;
-using Haley.Abstractions;
-using System.Net;
-using Haley.Utils;
 
-namespace Haley.Models
-{
-    public class FormEncodedRequest : RequestObject,IRequestBody {
+namespace Haley.Models {
+    public class EncodedFormRequestContent : HttpRequestContent, IEncodedFormRequestContent {
 
         public new IList<QueryParam> Value => base.Value as IList<QueryParam>;
 
@@ -24,9 +18,8 @@ namespace Haley.Models
         /// Rest Param Object
         /// </summary>
         /// <param name="value"></param>
-        public FormEncodedRequest(IList<QueryParam> value):base(value)
-        {
-            if(value == null) {
+        public EncodedFormRequestContent(IList<QueryParam> value) : base(value) {
+            if (value == null) {
                 base.UpdateValue(new List<QueryParam>());
             }
         }

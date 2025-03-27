@@ -1,14 +1,8 @@
-﻿using Haley.Enums;
-using System;
-using System.Collections;
+﻿using Haley.Utils;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Collections.Specialized;
-using System.Xml;
-using Haley.Utils;
-using Microsoft.Identity.Client;
+using System.Linq;
+using System.Text;
 
 namespace Haley.Models {
     public class QueryParamList : List<QueryParam> {
@@ -63,7 +57,7 @@ namespace Haley.Models {
         #region Methods
 
         public void Add(string key, string value) => Add(new QueryParam(key, value));
-   
+
         public void AddRange(IEnumerable<QueryParam> @params) {
             if (@params == null) return;
             base.AddRange(@params);
@@ -74,7 +68,7 @@ namespace Haley.Models {
             foreach (var key in @params.AllKeys) {
                 var _key = key;
                 var _value = @params[key];
-                var param = new QueryParam(_key,_value) {};
+                var param = new QueryParam(_key, _value) { };
                 base.Add(param);
             }
         }
@@ -84,7 +78,7 @@ namespace Haley.Models {
             foreach (var item in @params) {
                 var _key = item.Key;
                 var _value = item.Value;
-                var param = new QueryParam(_key, _value) {  };
+                var param = new QueryParam(_key, _value) { };
                 base.Add(param);
             }
         }

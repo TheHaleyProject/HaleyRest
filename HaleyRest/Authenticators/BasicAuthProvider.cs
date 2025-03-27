@@ -1,25 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
-using System.IO;
+﻿using Haley.Abstractions;
+using System;
 using System.Net.Http;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using Haley.Models;
-using Haley.Enums;
-using System.Text.Json;
-using System.Xml.Schema;
-using System.Security.Principal;
-using System.Security.Cryptography;
-using System.Data.Common;
-using Haley.Abstractions;
+using System.Text;
 
-namespace Haley.Utils
-{
-    public class BasicAuthProvider : IAuthProvider{
+namespace Haley.Utils {
+    public class BasicAuthProvider : IAuthProvider {
         string _userName;
         string _password;
         public string GetToken() {
@@ -31,7 +16,7 @@ namespace Haley.Utils
             var token = Convert.ToBase64String(Encoding.UTF8.GetBytes(sbldr.ToString()));
             return $@"Basic {token}";
         }
-        public string GenerateToken(Uri baseuri, HttpRequestMessage request,IAuthParam param) {
+        public string GenerateToken(Uri baseuri, HttpRequestMessage request, IAuthParam param) {
             return GetToken();
         }
 
@@ -41,7 +26,7 @@ namespace Haley.Utils
         }
 
         public override string ToString() {
-            return _userName+ ":" + _password;
+            return _userName + ":" + _password;
         }
 
         public BasicAuthProvider() { }

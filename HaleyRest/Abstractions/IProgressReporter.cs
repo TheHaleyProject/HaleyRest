@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using Haley.Enums;
+﻿using Haley.Enums;
 using Haley.Models;
+using System;
 
 namespace Haley.Abstractions {
     public interface IProgressReporter {
