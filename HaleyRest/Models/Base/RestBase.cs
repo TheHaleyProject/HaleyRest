@@ -165,8 +165,9 @@ namespace Haley.Models {
 
         #region Helpers
         protected JsonSerializerOptions GetSerializerOptions() {
+            //WriteIndented = true,
             var options = new JsonSerializerOptions() {
-                WriteIndented = true,
+                //WriteIndented = true,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,
                 UnknownTypeHandling = JsonUnknownTypeHandling.JsonElement,
             };

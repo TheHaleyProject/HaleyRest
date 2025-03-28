@@ -440,6 +440,9 @@ namespace Haley.Models {
                 //Form can be url encoded form and multi form.. //TODO : REFINE
                 //For more than one add as form data.
                 MultipartFormDataContent form_content = new MultipartFormDataContent();
+
+                //#####CHECK#####
+                //When boundary is added, the upload doesn't work
                 //form_content.Headers.Remove("Content-Type");
                 //form_content.Headers.TryAddWithoutValidation("Content-Type", "multipart/form-data; boundary=" + _boundary);
 
