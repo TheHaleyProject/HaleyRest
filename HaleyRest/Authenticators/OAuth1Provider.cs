@@ -333,6 +333,10 @@ namespace Haley.Utils {
             }
             return sb.ToString();
         }
+
+        public void ClearToken() {
+            //Not applicable as OAuth1 will generate token each time for new requests (based on payload hash signature)
+        }
         #endregion
     }
 }

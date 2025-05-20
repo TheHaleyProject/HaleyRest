@@ -24,6 +24,9 @@ namespace Haley.Utils {
         public override string ToString() {
             return _key + "=" + _value;
         }
+        public void ClearToken() {
+            _value = string.Empty;
+        }
 
         public APIKeyProvider() { }
     }
