@@ -23,7 +23,7 @@ namespace Haley.Models {
     public sealed class RestRequest : RestBase, IRequest {
         HttpRequestMessage _request = null;  //Prio-1
         HttpContent _content = null; //Prio-2
-        IEnumerable<IRequestContent> _requestObjects = new List<IRequestContent>();//Prio-3
+        List<IRequestContent> _requestObjects = new List<IRequestContent>();//Prio-3
         bool _inherit_headers = false;
         bool _inherit_authentication = false;
         bool _inherit_auth_param = false;
@@ -58,14 +58,15 @@ namespace Haley.Models {
         }
 
         public override IRequest WithParameter(IRequestContent param) {
-            return WithParameters(new List<IRequestContent>() { param });
+            _requestObjects.Add(param);
+            return this;
         }
 
         public override IRequest WithForm(IFormRequestContent param) {
             return WithParameter(param);
         }
         public override IRequest WithParameters(IEnumerable<IRequestContent> parameters) {
-            _requestObjects = parameters;
+            _requestObjects.AddRange(parameters);
             return this;
         }
         public override IRequest WithContent(HttpContent content) {
@@ -138,7 +139,7 @@ namespace Haley.Models {
             } else if (_content != null) {
                 //Prio 2 : If content is availble without request.
                 return await SendAsync(_content, URL, method); //Send associated URL without parsing
-            } else if (_requestObjects != null && _requestObjects.Count() > 0) {
+            } else if (_requestObjects != null && _requestObjects.Count > 0) {
                 //Prio 3: Conver the request objects to httpcontent.
                 var processedInputs = ConverToHttpContent(URL, _requestObjects, method); //Here, URL is just the end point.
                 return await SendAsync(processedInputs.content, processedInputs.url, method);
