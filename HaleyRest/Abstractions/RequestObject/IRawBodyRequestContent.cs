@@ -11,5 +11,6 @@ namespace Haley.Abstractions {
         BodyContentType BodyType { get; set; }
 
         string MIMEType { get; set; }
+        bool OverrideMIMETypeAutomatically { get; set; }
     }
 }

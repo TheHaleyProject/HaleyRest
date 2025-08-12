@@ -14,6 +14,7 @@ namespace Haley.Models {
         public string Title { get; set; }
 
         public string MIMEType { get; set; }
+        public bool OverrideMIMETypeAutomatically { get; set; } = true;
         /// <summary>
         /// Rest Param Object
         /// </summary>

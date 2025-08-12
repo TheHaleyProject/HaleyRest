@@ -394,9 +394,10 @@ namespace Haley.Models {
                     //If the input is not serialize and also not in any of the default base formats, we try to serialize it.
                     if (!(rawbody.Value.IsNumericType() || rawbody.Value is string || rawbody.Value is bool || rawbody.Value is Enum) && !rawbody.IsSerialized) {
                         _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
-                        mediatype = "application/json";
+                        if (rawbody.OverrideMIMETypeAutomatically) mediatype = "application/json";
+
                     } else {
-                        mediatype = "text/plain"; //Because it is a plain string.
+                        if (rawbody.OverrideMIMETypeAutomatically) mediatype = "text/plain"; //Because it is a plain string.
                     }
 
                     if (_reporter != null) {
