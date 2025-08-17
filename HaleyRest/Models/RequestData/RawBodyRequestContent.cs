@@ -1,5 +1,7 @@
 ﻿using Haley.Abstractions;
 using Haley.Enums;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Haley.Models {
     public class RawBodyRequestContent : HttpRequestContent, ISerializeRequest, IRawBodyRequestContent {
@@ -7,6 +9,14 @@ namespace Haley.Models {
         public void SetSerialized() {
             if (!IsSerialized) IsSerialized = true;
         }
+        public bool Append(object value) {
+            if (Value is List<object> list) {
+                list.Add(value);
+                return true;
+            }
+            return false;
+        }
+
         public BodyContentType BodyType { get; set; }
         /// <summary>
         /// This will be shared with the HTTP Request. Can be used for sending the request with file name.

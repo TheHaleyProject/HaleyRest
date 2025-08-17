@@ -9,7 +9,7 @@ namespace Haley.Abstractions {
         bool IsSerialized { get; } //Should be set only once to avoid re-serializing again.
         void SetSerialized();
         BodyContentType BodyType { get; set; }
-
+        bool Append(object value);
         string MIMEType { get; set; }
         bool OverrideMIMETypeAutomatically { get; set; }
     }

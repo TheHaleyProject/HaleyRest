@@ -10,7 +10,10 @@ namespace Haley.Models {
 
         public string GetEncodedBodyContent() {
 
-            var encoded = Value?.Select(p => $"{NetUtils.URLSingleEncode(p.Key, p.IsURLDecoded ? p.Key : null)}={NetUtils.URLSingleEncode(p.Value, p.IsURLDecoded ? p.Value : null)}");
+            var encoded = Value?.Select(p => {
+                var value = p.Value is string str ? NetUtils.URLSingleEncode(str, p.IsURLDecoded ? str : null) : p.Value;
+                return $"{NetUtils.URLSingleEncode(p.Key, p.IsURLDecoded ? p.Key : null)}={value}";
+            });
             return string.Join("&", encoded);
         }
 

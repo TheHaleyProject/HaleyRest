@@ -116,6 +116,14 @@ namespace Haley.Models {
             return GetNewRequest().WithForm(param);
         }
 
+        public override IRequest WithForm(FormUrlEncodedContent content, string key) {
+            return GetNewRequest().WithForm(content,key);
+        }
+
+        public override IRequest WithForm(Dictionary<string, object> formdata) {
+            return GetNewRequest().WithForm(formdata);
+        }
+
         public override IRequest WithQueries(IEnumerable<IQueryRequestContent> parameters) {
             return GetNewRequest().WithQueries(parameters);
         }

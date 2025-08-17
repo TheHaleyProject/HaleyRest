@@ -1,5 +1,7 @@
 ﻿using Haley.Abstractions;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Haley.Models {
     /// <summary>

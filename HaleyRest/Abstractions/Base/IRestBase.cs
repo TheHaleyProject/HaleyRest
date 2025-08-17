@@ -21,6 +21,8 @@ namespace Haley.Abstractions {
         IRequest WithParameter(IRequestContent param);
         IRequest WithParameters(IEnumerable<IRequestContent> parameters);
         IRequest WithForm(IFormRequestContent form);
+        IRequest WithForm(FormUrlEncodedContent content,string key);
+        IRequest WithForm(Dictionary<string,object> formdata);
         IRequest WithQuery(IQueryRequestContent param);
         IRequest WithQueries(IEnumerable<IQueryRequestContent> parameters);
         IRequest WithContent(HttpContent content);

@@ -226,6 +226,8 @@ namespace Haley.Models {
         public abstract IRequest WithBody(IRawBodyRequestContent rawBodyRequest);
         public abstract IRequest WithParameters(IEnumerable<IRequestContent> parameters);
         public abstract IRequest WithForm(IFormRequestContent form);
+        public abstract IRequest WithForm(Dictionary<string,object> formData);
+        public abstract IRequest WithForm(FormUrlEncodedContent content, string key);
         public abstract IRequest WithContent(HttpContent content);
         public abstract IRequest WithQuery(IQueryRequestContent param);
         public abstract IRequest WithQueries(IEnumerable<IQueryRequestContent> parameters);

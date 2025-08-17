@@ -133,6 +133,7 @@ namespace Haley.Utils {
         public static string URLSingleEncode(string input, string expectedDecodedValue = null) {
             bool isEncoded = true; //Assuming everything is already encoded.
             var workingValue = input;
+            if (workingValue == null) return workingValue;
 
             //WHY ExpectedDecodeValue ? => Sometimes, the input itself is meant to have "%23" which is part of the actual string. But when we try to singleencode, we end up decoding that %23 to # which is wrong. So, when we know that there is a expected decoded value, we setit up.
 

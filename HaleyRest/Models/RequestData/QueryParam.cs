@@ -3,7 +3,7 @@
 namespace Haley.Models {
     public class QueryParam : HttpRequestContent, IQueryRequestContent {
         public string Key { get; set; }
-        public new string Value => base.Value as string; //Hiding the base Value.
+        //public new string Value => base.Value as string; //Hiding the base Value.
         public bool IsURLDecoded { get; private set; }
 
         public IQueryRequestContent SetAsURLDecoded() {
@@ -18,7 +18,7 @@ namespace Haley.Models {
         /// </param>
         /// <param name="value"></param>
         /// <param name="is_serialized"></param>
-        public QueryParam(string key, string value) : base(value) {
+        public QueryParam(string key, object value) : base(value) {
             Key = string.IsNullOrWhiteSpace(key) ? "id" : key;
             //By default, the query parameters are not locked. Which means, it will be marked for single encode (decode to the final value and then encode once).
         }

@@ -32,7 +32,7 @@ namespace Haley.Models {
             }
         }
 
-        public IEnumerable<string> Values {
+        public IEnumerable<object> Values {
             get {
                 return this.Select(p => p.Value); //Not distinct.
             }
@@ -107,7 +107,7 @@ namespace Haley.Models {
 
                 if (urlEncode) {
                     key = NetUtils.URLSingleEncode(key, item.IsURLDecoded ? item.Key : null);
-                    value = NetUtils.URLSingleEncode(value, item.IsURLDecoded ? item.Value : null);
+                    value = value is string valStr ? NetUtils.URLSingleEncode(valStr, item.IsURLDecoded ? valStr : null) : value;
                 }
 
                 //key

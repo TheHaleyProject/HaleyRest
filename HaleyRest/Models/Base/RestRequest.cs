@@ -65,6 +65,16 @@ namespace Haley.Models {
         public override IRequest WithForm(IFormRequestContent param) {
             return WithParameter(param);
         }
+
+        public override IRequest WithForm(Dictionary<string,object> param) {
+            var form = new FormDataRequestContent(param);
+            return WithParameter(form);
+        }
+
+        public override IRequest WithForm(FormUrlEncodedContent content, string key) {
+            var form = new FormDataRequestContent(content,key);
+            return WithParameter(form);
+        }
         public override IRequest WithParameters(IEnumerable<IRequestContent> parameters) {
             _requestObjects.AddRange(parameters);
             return this;
@@ -339,7 +349,7 @@ namespace Haley.Models {
                 WriteLog(LogLevel.Debug, $@"Request body of type {_requestBody?.GetType()} is getting added to request body.");
                 if (_requestBody is IRawBodyRequestContent rawReq) {
                     //Just add a raw content and send.
-                    result = PrepareRawBody(rawReq);
+                    result = PrepareRawBody(rawReq,null);
 
                 } else if (_requestBody is IFormDataRequestContent formreq) {
                     result = PrepareFormBody(formreq);
@@ -364,7 +374,7 @@ namespace Haley.Models {
             foreach (var param in paramQueries) {
                 //if something is marked as the decodedoutput, then it should not be further decoded.(Like it should not be URL
                 var key = NetUtils.URLSingleEncode(param.Key, param.IsURLDecoded ? param.Key : null);
-                var value = NetUtils.URLSingleEncode(param.Value, param.IsURLDecoded ? param.Value : null);
+                var value = param.Value is string valStr ?  NetUtils.URLSingleEncode(valStr, param.IsURLDecoded ? valStr : null) : param.Value;
 
                 if (!startFlag) {
                     query.Append("&");
@@ -381,17 +391,25 @@ namespace Haley.Models {
             //The final formed query will be properly URLSingleEncoded
             return result;
         }
-        HttpContent PrepareRawBody(IRawBodyRequestContent rawbody) {
+        HttpContent PrepareRawBody(IRawBodyRequestContent rawbody, string key) {
             try {
                 //Dont use the Decription of the rawbody request anywhere. It will be used only for internal purpose
                 HttpContent result = null;
                 if (rawbody.Value == null) return result;
                 string mediatype = string.IsNullOrWhiteSpace(rawbody.MIMEType) ? "application/octet-stream" : rawbody.MIMEType;
 
+                //if (rawbody.Value is IEnumerable<object> list && !string.IsNullOrWhiteSpace(key)) {
+                //    //Value itself is a string. so, convert it into kvp
+                //    var convData = new List<KeyValuePair<string, string>>();
+                //    foreach (var item in list) {
+                //        convData.Add(new KeyValuePair<string, string>(key, item?.ToString()));
+                //    }
+                //    return new FormUrlEncodedContent(convData);
+                //}
+
                 switch (rawbody.BodyType) {
                     case BodyContentType.StringContent:
                     string _serialized_content = rawbody.Value.ToString(); //Assuming it is already serialized.
-                    //If the input is not serialize and also not in any of the default base formats, we try to serialize it.
                     if (!(rawbody.Value.IsNumericType() || rawbody.Value is string || rawbody.Value is bool || rawbody.Value is Enum) && !rawbody.IsSerialized) {
                         _serialized_content = rawbody.Value.ToJson(_jsonConverters?.Values?.ToList());
                         if (rawbody.OverrideMIMETypeAutomatically) mediatype = "application/json";
@@ -450,7 +468,12 @@ namespace Haley.Models {
 
                 foreach (var item in formbody.Value) {
                     if (item.Value == null || item.Value.Value == null) continue;
-                    var rawContent = PrepareRawBody(item.Value);
+                    HttpContent rawContent = null;
+                    if (item.Value.Value is HttpContent orgContent) {
+                        return orgContent; //Dont' try to do anything else.
+                    } else {
+                        rawContent = PrepareRawBody(item.Value, item.Key);
+                    }
                     if (rawContent == null) continue;
                     if (string.IsNullOrWhiteSpace(item.Value.Title)) {
                         rawContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data") {

@@ -115,8 +115,8 @@ namespace Haley.Utils {
                     if (!string.IsNullOrWhiteSpace(p.Key)) {
                         p.Key = Uri.UnescapeDataString(p.Key); //Unescape only once
                     }
-                    if (!string.IsNullOrWhiteSpace(p.Value)) {
-                        p.UpdateValue(Uri.UnescapeDataString(p.Value)); //Unescape only once.
+                    if (p.Value is string pstr && !string.IsNullOrWhiteSpace(pstr)) {
+                        p.UpdateValue(Uri.UnescapeDataString(pstr)); //Unescape only once.
                     }
                     p.SetAsURLDecoded(); //Now this is marked as the final desired output.
                 });
