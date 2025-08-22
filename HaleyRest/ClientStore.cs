@@ -33,9 +33,9 @@ namespace Haley.Rest {
                 return GetClient(key); //if key already exists.
             }
         }
-        public static IClient AddClient(Enum @enum, string base_uri, string friendly_name, Func<HttpRequestMessage, Task<bool>> requestvalidation = null, ILogger logger = null) { return AddClient(@enum.GetKey(), base_uri, friendly_name, requestvalidation, logger); }
+        public static IClient AddClient(Enum @enum, string base_uri, string friendly_name, Func<HttpRequestMessage, Task<bool>> requestvalidation = null, ILogger logger = null, HttpMessageHandler handler = null) { return AddClient(@enum.GetKey(), base_uri, friendly_name, requestvalidation, logger,handler); }
 
-        public static IClient AddClient(string key, string base_uri, string friendly_name, Func<HttpRequestMessage, Task<bool>> requestvalidation = null, ILogger logger = null) { return AddClient(key, new FluentClient(base_uri, friendly_name, requestvalidation, logger)); }
+        public static IClient AddClient(string key, string base_uri, string friendly_name, Func<HttpRequestMessage, Task<bool>> requestvalidation = null, ILogger logger = null, HttpMessageHandler handler = null) { return AddClient(key, new FluentClient(base_uri, friendly_name, requestvalidation, logger,handler)); }
 
         public static bool RemoveClient(string key) {
             return _clientDictionary.TryRemove(key, out var _removed);
