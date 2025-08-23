@@ -10,20 +10,53 @@ using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Haley.Rest {
-    public static class ClientStore {
+    public class ClientStore {
         private static ConcurrentDictionary<string, IClient> _clientDictionary = new ConcurrentDictionary<string, IClient>();
+        private static ClientStore _instance = new ClientStore(); //static item.
+
+        private ClientStore() { } //Private initialization
+
+        public IClient this[string key] {
+            get {
+                return Get(key);
+            }
+        }
+
+        public IClient this[Enum @key] {
+            get {
+                return Get(@key);
+            }
+        }
+
 
         /// <summary>
         /// For each call, this will remove any stored request headers added before and will return the client
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
+        [Obsolete("Replace with simpler Get()",true)]
         public static IClient GetClient(string key) {
             _clientDictionary.TryGetValue(key, out var result);
             return result;
         }
+
+        [Obsolete("Replace with simpler Get()",true)]
         public static IClient GetClient(Enum @enum) {
             return GetClient(@enum.GetKey());
+        }
+
+        /// <summary>
+        /// For each call, this will remove any stored request headers added before and will return the client
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public static IClient Get(string key) {
+            _clientDictionary.TryGetValue(key, out var result);
+            return result;
+        }
+
+        public static IClient Get(Enum @enum) {
+            return Get(@enum.GetKey());
         }
 
         public static IClient GenerateClient(Dictionary<string, object> dic, ILogger logger) {
@@ -53,7 +86,7 @@ namespace Haley.Rest {
         /// <param name="logger"></param>
         /// <returns></returns>
         public static IClient AddClient(string key, string cfgInfo, ILogger logger = null) {
-            if (string.IsNullOrWhiteSpace(cfgInfo)) return null;
+            if (string.IsNullOrWhiteSpace(cfgInfo)) throw new ArgumentNullException($@"The configuration information is empty. Cannot proceed to create FluentClient for {key}");
             var dic = cfgInfo.ToDictionarySplit();
             return AddClient(key, GenerateClient(dic, logger));
         }
@@ -64,7 +97,7 @@ namespace Haley.Rest {
             if (_clientDictionary.TryAdd(key, client)) {
                 return client; //If sucessfully added.
             } else {
-                return GetClient(key); //if key already exists.
+                return Get(key); //if key already exists.
             }
         }
         public static IClient AddClient(Enum @enum, string base_uri, string friendly_name, Func<HttpRequestMessage, Task<bool>> requestvalidation = null, ILogger logger = null, HttpMessageHandler handler = null) { return AddClient(@enum.GetKey(), base_uri, friendly_name, requestvalidation, logger,handler); }
