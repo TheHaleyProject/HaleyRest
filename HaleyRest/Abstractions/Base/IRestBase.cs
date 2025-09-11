@@ -16,6 +16,7 @@ namespace Haley.Abstractions {
         #region Return Requests
 
         IRequest AddCancellationToken(CancellationToken cancellation_token); //Cancellation token is only for the requests.
+        IRequest AddHTTPCompletion(HttpCompletionOption completion_option); //Cancellation token is only for the requests.
         IRequest WithEndPoint(string resource_url_endpoint);
         //Prepare Request
         IRequest WithParameter(IRequestContent param);

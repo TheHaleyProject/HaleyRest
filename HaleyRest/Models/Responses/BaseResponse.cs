@@ -1,4 +1,5 @@
 ﻿using Haley.Abstractions;
+using System.Net;
 using System.Net.Http;
 
 
@@ -8,6 +9,7 @@ namespace Haley.Models {
         public HttpContent OriginalContent => OriginalResponse == null ? null : OriginalResponse.Content;
 
         public bool IsSuccessStatusCode => OriginalResponse == null ? false : OriginalResponse.IsSuccessStatusCode;
+        public HttpStatusCode StatusCode => OriginalResponse == null ? HttpStatusCode.InternalServerError : OriginalResponse.StatusCode;
         public bool IsContentEncoded => GetEncodeStatus();
 
         private bool GetEncodeStatus() {
@@ -16,6 +18,7 @@ namespace Haley.Models {
             return false;
         }
         public string Message { get; private set; }
+        
 
         public IResponse UpdateResponse(HttpResponseMessage response) {
             this.OriginalResponse = response;

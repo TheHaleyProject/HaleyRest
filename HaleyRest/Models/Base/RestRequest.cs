@@ -32,6 +32,7 @@ namespace Haley.Models {
         #region Attributes
         string _boundary = "----CustomBoundary" + DateTime.Now.Ticks.ToString("x");
         CancellationToken? _cancellation_token = null;
+        HttpCompletionOption? _http_completion_option = null;
         public IClient Client { get; private set; }
         #endregion
 
@@ -109,6 +110,11 @@ namespace Haley.Models {
 
         public override IRequest AddCancellationToken(CancellationToken cancellation_token) {
             this._cancellation_token = cancellation_token;
+            return this;
+        }
+
+        public override IRequest AddHTTPCompletion(HttpCompletionOption completion_option) {
+            this._http_completion_option = completion_option;
             return this;
         }
 
@@ -256,10 +262,6 @@ namespace Haley.Models {
             var result = await SendAsync(method);
             return result; //All calls from here will receive stringResponse content.
         }
-        internal async Task<IResponse> SendAsync(HttpRequestMessage request, CancellationToken cancellation_token) {
-            this._cancellation_token = cancellation_token;
-            return await SendAsync(request);
-        }
 
         internal async Task<IResponse> SendAsync(HttpRequestMessage request) {
             this._request = request;
@@ -280,10 +282,13 @@ namespace Haley.Models {
             //Here we donot modify anything. We just send and receive the response.
             HttpResponseMessage message;
             try {
-                if (_cancellation_token != null) {
+                if (_cancellation_token != null && _http_completion_option != null) {
+                    message = await Client.BaseClient.SendAsync(_request, _http_completion_option.Value, _cancellation_token.Value);
+                } else if (_http_completion_option != null) {
+                    message = await Client.BaseClient.SendAsync(_request, _http_completion_option.Value);
+                } else if (_cancellation_token != null) {
                     message = await Client.BaseClient.SendAsync(_request, _cancellation_token.Value);
                 } else {
-
                     message = await Client.BaseClient.SendAsync(_request);
                 }
             } catch (Exception ex) {

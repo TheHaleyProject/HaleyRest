@@ -221,6 +221,7 @@ namespace Haley.Models {
         public abstract IRequest WithProgressReporter(IProgressReporter reporter);
         public abstract IRequest WithEndPoint(string resource_url_endpoint);
         public abstract IRequest AddCancellationToken(CancellationToken cancellation_token);
+        public abstract IRequest AddHTTPCompletion(HttpCompletionOption completion_option);
         public abstract IRequest WithParameter(IRequestContent param);
         public abstract IRequest WithBody(object content, bool is_serialized, BodyContentType content_type);
         public abstract IRequest WithBody(IRawBodyRequestContent rawBodyRequest);

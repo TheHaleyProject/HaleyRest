@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Haley.Abstractions {
@@ -18,6 +19,8 @@ namespace Haley.Abstractions {
         Func<HttpRequestMessage, Task<bool>> GetRequestValidation();
         //A request should contain a client. We cannot directly use a request to execute this. If client is not present, then we cannot execute. So, let this be a client side call.
         Task<IResponse> SendAsync(HttpRequestMessage request);
+        Task<IResponse> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption);
+        Task<IResponse> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken);
         /// <summary>
         /// Creates an empty request
         /// </summary>

@@ -94,6 +94,10 @@ namespace Haley.Models {
             return GetNewRequest().AddCancellationToken(cancellation_token);
         }
 
+        public override IRequest AddHTTPCompletion(HttpCompletionOption completion_option) {
+            return GetNewRequest().AddHTTPCompletion(completion_option);
+        }
+
         public override IRequest WithParameter(IRequestContent param) {
             return GetNewRequest().WithParameter(param);
         }
@@ -178,6 +182,20 @@ namespace Haley.Models {
 
             return await ((new RestRequest().SetClient(this)) as RestRequest).SendAsync(request);
         }
+
+        public async Task<IResponse> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption) {
+            var reqObj = (new RestRequest().SetClient(this)) as RestRequest;
+            reqObj?.AddHTTPCompletion(completionOption);
+            return await reqObj?.SendAsync(request);
+        }
+
+        public async Task<IResponse> SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken) {
+            var reqObj = (new RestRequest().SetClient(this)) as RestRequest;
+            reqObj?.AddHTTPCompletion(completionOption);
+            reqObj?.AddCancellationToken(cancellationToken);
+            return await reqObj?.SendAsync(request);
+        }
+
 
         #region Common Methods
         public new IClient SetAuthenticator(IAuthProvider authenticator) {
