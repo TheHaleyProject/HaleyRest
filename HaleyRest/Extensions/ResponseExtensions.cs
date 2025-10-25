@@ -1,5 +1,8 @@
 ﻿using Haley.Abstractions;
 using Haley.Models;
+using Haley.Rest;
+using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace Haley.Utils {
