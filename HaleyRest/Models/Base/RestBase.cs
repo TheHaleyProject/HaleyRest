@@ -197,6 +197,9 @@ namespace Haley.Models {
                         string _authority = _uri.GetLeftPart(UriPartial.Authority);
                         string _method = input_url.Substring(_authority.Length);
                         return (_authority, _method);
+                    } else {
+                        //Relative URL should not have a leading '/'
+                        input_url = input_url.TrimStart('/');
                     }
                 }
                 return (string.Empty, input_url);

@@ -50,9 +50,13 @@ namespace Haley.Models {
             AddCollection(@params);
         }
 
+        public QueryParamList(Dictionary<string, object> @params) {
+            this.AddDictionary(@params);
+        }
         public QueryParamList(Dictionary<string, string> @params) {
             this.AddDictionary(@params);
         }
+
         #endregion
 
         #region Methods
@@ -73,8 +77,12 @@ namespace Haley.Models {
                 base.Add(param);
             }
         }
-
         public void AddDictionary(IDictionary<string, string> @params) {
+            if (@params == null) return;
+            AddDictionary(@params.ToDictionary(kvp => kvp.Key, kvp => (object)kvp.Value));
+        }
+
+        public void AddDictionary(IDictionary<string, object> @params) {
             if (@params == null) return;
             foreach (var item in @params) {
                 var _key = item.Key;
