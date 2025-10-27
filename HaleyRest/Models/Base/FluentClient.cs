@@ -3,6 +3,7 @@ using Haley.Enums;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Text.Json.Serialization;
@@ -29,7 +30,7 @@ namespace Haley.Models {
         #endregion
 
         #region Constructors
-        public FluentClient(string base_address, string friendly_name, Func<HttpRequestMessage, Task<bool>> request_validationcallback, ILogger logger, HttpMessageHandler handler) : base(base_address) {
+        public FluentClient(string base_address, string friendly_name, Func<HttpRequestMessage, Task<bool>> request_validationcallback, ILogger logger, HttpMessageHandler handler, bool enableHttp2 = false) : base(base_address) {
             _base_uri = CreateURI(base_address);
             _request_validation_cb = request_validationcallback;
             if (string.IsNullOrWhiteSpace(friendly_name)) friendly_name = base_address;
@@ -37,6 +38,13 @@ namespace Haley.Models {
             base.SetLogger(logger);
             if (handler != null) _handler = handler;
             BaseClient = new HttpClient(_handler, false); //Base client is read only. So initiate only once.
+
+#if NET8_0_OR_GREATER
+          if (enableHttp2){
+           BaseClient.DefaultRequestVersion = HttpVersion.Version20;
+           BaseClient.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
+          }
+#endif
             if (_base_uri == null || string.IsNullOrWhiteSpace(base_address)) {
                 WriteLog(LogLevel.Debug, $@"Warning: Base URI for the Client is null. Please add base uri to client or the rest request endpoints needs to be provided with full URL for proper execution");
             } else {
@@ -44,8 +52,8 @@ namespace Haley.Models {
             }
             ResetHeaders();
         }
-        public FluentClient(string base_address, string friendly_name, ILogger logger, HttpMessageHandler handler = null) : this(base_address, friendly_name, null, logger, handler) { }
-        public FluentClient(string base_address, ILogger logger, HttpMessageHandler handler = null) : this(base_address, base_address, null, logger, handler) { }
+        public FluentClient(string base_address, string friendly_name, ILogger logger, HttpMessageHandler handler = null, bool enableHttp2 = false) : this(base_address, friendly_name, null, logger, handler,enableHttp2) { }
+        public FluentClient(string base_address, ILogger logger, HttpMessageHandler handler = null, bool enableHttp2 = false) : this(base_address, base_address, null, logger, handler,enableHttp2) { }
         public FluentClient(string base_address, HttpMessageHandler handler = null) : this(base_address, "Fluent Client", null, handler) { }
         public FluentClient() : this(string.Empty, "Fluent Client", null) { }
 
@@ -60,7 +68,7 @@ namespace Haley.Models {
             }
             return this;
         }
-        #endregion
+#endregion
 
         public override string ToString() {
             return this.FriendlyName;

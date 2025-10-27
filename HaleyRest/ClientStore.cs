@@ -8,6 +8,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Net;
+using System.Security.Authentication;
+using System.Net.Security;
 
 namespace Haley.Rest {
     public class ClientStore {
@@ -59,10 +62,44 @@ namespace Haley.Rest {
             return Get(@enum.GetKey());
         }
 
-        public static IClient GenerateClient(Dictionary<string, object> dic, ILogger logger) {
-            HttpMessageHandler handler = null;
-            if (dic.ContainsKey("ssl-ignore")) handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (m, c, ch, e) => true };
-            var result = new FluentClient(dic.GenerateBaseURLAddress(), logger, handler) { };
+        public static IClient GenerateClient(Dictionary<string, object> dic, ILogger logger, HttpMessageHandler handler = null) {
+#if NET8_0_OR_GREATER
+//If we are in .Net 8, we can go for SocketsHttp Directly
+            if((dic.ContainsKey("http2") || dic.ContainsKey("ssl-ignore")) && handler == null) handler = new SocketsHttpHandler();
+
+            //HTTP2
+             if (dic.ContainsKey("http2") && handler is SocketsHttpHandler socksH){
+                 socksH.EnableMultipleHttp2Connections = true;
+                 socksH.PooledConnectionLifetime= TimeSpan.FromMinutes(5);
+                 socksH.PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2);
+                 socksH.MaxConnectionsPerServer = int.MaxValue;
+                 socksH.SslOptions = new System.Net.Security.SslClientAuthenticationOptions{
+                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                    RemoteCertificateValidationCallback = (_, _, _, _) => true,
+                    ApplicationProtocols = new List<SslApplicationProtocol>
+                        {
+                            SslApplicationProtocol.Http2, // explicitly request h2
+                            SslApplicationProtocol.Http11
+                        }
+                 };
+             }
+
+             //SSL - SOCKETS (We are already setting this in http2. So, if and only if http2 is not present, we set here.
+             if (!dic.ContainsKey("http2") &&  dic.ContainsKey("ssl-ignore") && handler is SocketsHttpHandler socksH2){
+                 socksH2.SslOptions = new System.Net.Security.SslClientAuthenticationOptions{
+                    RemoteCertificateValidationCallback = (_, _, _, _) => true
+                 };
+             }
+
+             //SSL- HTTPCLIENT
+             if (dic.ContainsKey("ssl-ignore") && handler is HttpClientHandler cliH){
+                 cliH.ServerCertificateCustomValidationCallback  =  (_, _, _, _) => true;
+              };
+#endif
+            //Fall back
+            if (dic.ContainsKey("ssl-ignore") && handler == null) handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (m, c, ch, e) => true };
+
+            var result = new FluentClient(dic.GenerateBaseURLAddress(), logger, handler, dic.ContainsKey("http2")) { };
             result.BaseClient.Timeout = TimeSpan.FromSeconds(200);
             return result;
         }
@@ -74,8 +111,8 @@ namespace Haley.Rest {
         /// <param name="cfgInfo">Holding data like : "base=http://{{app-ip-or-url}}:{{port}}/;route={{/SOME-SUFFIX}};suffix={{SOME-ADDITIONAL-SUFFIX}};ssl-ignore;"</param>
         /// <param name="logger"></param>
         /// <returns></returns>
-        public static IClient AddClient(Enum key, string cfgInfo, ILogger logger = null) {
-            return AddClient(key.GetKey(), cfgInfo, logger);
+        public static IClient AddClient(Enum key, string cfgInfo, ILogger logger = null,HttpMessageHandler handler =null) {
+            return AddClient(key.GetKey(), cfgInfo, logger,handler);
         }
        
         /// <summary>
@@ -85,10 +122,10 @@ namespace Haley.Rest {
         /// <param name="cfgInfo">Holding data like : "base=http://{{app-ip-or-url}}:{{port}}/;route={{/SOME-SUFFIX}};suffix={{SOME-ADDITIONAL-SUFFIX}};ssl-ignore;"</param>
         /// <param name="logger"></param>
         /// <returns></returns>
-        public static IClient AddClient(string key, string cfgInfo, ILogger logger = null) {
+        public static IClient AddClient(string key, string cfgInfo, ILogger logger = null,HttpMessageHandler handler = null) {
             if (string.IsNullOrWhiteSpace(cfgInfo)) throw new ArgumentNullException($@"The configuration information is empty. Cannot proceed to create FluentClient for {key}");
             var dic = cfgInfo.ToDictionarySplit();
-            return AddClient(key, GenerateClient(dic, logger));
+            return AddClient(key, GenerateClient(dic, logger,handler));
         }
 
         public static IClient AddClient(Enum @enum, IClient client) { return AddClient(@enum.GetKey(), client); }
