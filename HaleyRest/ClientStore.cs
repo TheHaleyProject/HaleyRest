@@ -65,41 +65,40 @@ namespace Haley.Rest {
         public static IClient GenerateClient(Dictionary<string, object> dic, ILogger logger, HttpMessageHandler handler = null) {
 #if NET8_0_OR_GREATER
 //If we are in .Net 8, we can go for SocketsHttp Directly
-            if((dic.ContainsKey("http2") || dic.ContainsKey("ssl-ignore")) && handler == null) handler = new SocketsHttpHandler();
+            if((dic.ContainsKey("http2") || dic.ContainsKey("ssl-ignore")) && handler == null) handler = new SocketsHttpHandler(); //We set handler for .net8
 
             //HTTP2
-             if (dic.ContainsKey("http2") && handler is SocketsHttpHandler socksH){
+            if (handler is SocketsHttpHandler socksH){
+             if (dic.ContainsKey("http2")){
                  socksH.EnableMultipleHttp2Connections = true;
                  socksH.PooledConnectionLifetime= TimeSpan.FromMinutes(5);
                  socksH.PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2);
                  socksH.MaxConnectionsPerServer = int.MaxValue;
-                 socksH.SslOptions = new System.Net.Security.SslClientAuthenticationOptions{
-                    EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-                    RemoteCertificateValidationCallback = (_, _, _, _) => true,
-                    ApplicationProtocols = new List<SslApplicationProtocol>
-                        {
-                            SslApplicationProtocol.Http2, // explicitly request h2
-                            SslApplicationProtocol.Http11
-                        }
-                 };
-             }
-
+                 socksH.SslOptions = null; //reset other custom options.
+                 socksH.SslOptions = new SslClientAuthenticationOptions();
+                 socksH.SslOptions.EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13;
+                 socksH.SslOptions.ApplicationProtocols = new List<SslApplicationProtocol>{SslApplicationProtocol.Http2, SslApplicationProtocol.Http11};
+                 socksH.SslOptions.RemoteCertificateValidationCallback = (_, _, _, _) => true;
+             } else if (dic.ContainsKey("ssl-ignore")){
              //SSL - SOCKETS (We are already setting this in http2. So, if and only if http2 is not present, we set here.
-             if (!dic.ContainsKey("http2") &&  dic.ContainsKey("ssl-ignore") && handler is SocketsHttpHandler socksH2){
-                 socksH2.SslOptions = new System.Net.Security.SslClientAuthenticationOptions{
-                    RemoteCertificateValidationCallback = (_, _, _, _) => true
-                 };
+                 socksH.SslOptions = new SslClientAuthenticationOptions();
+                 socksH.SslOptions.RemoteCertificateValidationCallback = (_, _, _, _) => true;
              }
-
-             //SSL- HTTPCLIENT
-             if (dic.ContainsKey("ssl-ignore") && handler is HttpClientHandler cliH){
-                 cliH.ServerCertificateCustomValidationCallback  =  (_, _, _, _) => true;
-              };
+            }
 #endif
             //Fall back
-            if (dic.ContainsKey("ssl-ignore") && handler == null) handler = new HttpClientHandler { ServerCertificateCustomValidationCallback = (m, c, ch, e) => true };
 
-            var result = new FluentClient(dic.GenerateBaseURLAddress(), logger, handler, dic.ContainsKey("http2")) { };
+
+            if (dic.ContainsKey("ssl-ignore") && handler == null) handler = new HttpClientHandler();
+
+            if (handler is HttpClientHandler cliH) {
+                //SSL- HTTPCLIENT
+                if (dic.ContainsKey("ssl-ignore")) {
+                    cliH.ServerCertificateCustomValidationCallback = (m, c, ch, e) => true;
+                }
+            }
+
+                var result = new FluentClient(dic.GenerateBaseURLAddress(), logger, handler, dic.ContainsKey("http2")) { };
             result.BaseClient.Timeout = TimeSpan.FromSeconds(200);
             return result;
         }
