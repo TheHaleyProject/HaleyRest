@@ -118,7 +118,7 @@ namespace Haley.Rest {
         /// 
         /// </summary>
         /// <param name="key"></param>
-        /// <param name="cfgInfo">Holding data like : "base=http://{{app-ip-or-url}}:{{port}}/;route={{/SOME-SUFFIX}};suffix={{SOME-ADDITIONAL-SUFFIX}};ssl-ignore;"</param>
+        /// <param name="cfgInfo">Holding data like : "base=http://{{app-ip-or-url}}:{{port}}/;route={{/SOME-SUFFIX}};suffix={{SOME-ADDITIONAL-SUFFIX}};ssl-ignore;forward-headers;"</param>
         /// <param name="logger"></param>
         /// <returns></returns>
         public static IClient AddClient(string key, string cfgInfo, ILogger logger = null,HttpMessageHandler handler = null) {

@@ -38,9 +38,9 @@ namespace Haley.Models {
             base.SetLogger(logger);
             if (handler != null) _handler = handler;
             BaseClient = new HttpClient(_handler, false); //Base client is read only. So initiate only once.
-
+// NET5_0_OR_GREATER
 #if NET8_0_OR_GREATER
-          if (enableHttp2){
+            if (enableHttp2){
            BaseClient.DefaultRequestVersion = HttpVersion.Version20;
            BaseClient.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrHigher;
           }
